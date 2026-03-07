@@ -11,7 +11,9 @@ export const DIALOGUES = {
             { speaker: 'Naruto', text: "Alright! Finally a real mission! I've been waiting for this, believe it!" },
             { speaker: 'Sasuke', text: "...Let's just get it done." },
             { speaker: 'Sakura', text: "I'm ready, Kakashi Sensei!" },
-            { speaker: 'Kakashi', text: "Head to the village gate when you're ready. And remember - teamwork is key." },
+            { speaker: 'Kakashi', text: "Remember - this is territorial warfare. Push enemies back to claim ground." },
+            { speaker: 'Kakashi', text: "And be careful of pull techniques - if you're dragged into enemy territory, they'll all get a free shot at you." },
+            { speaker: 'Kakashi', text: "Head to the village gate when you're ready. Every point of damage counts out there." },
         ],
         onComplete: { action: 'setFlag', flag: 'talked_to_kakashi' }
     },
@@ -116,47 +118,50 @@ export const DIALOGUES = {
  */
 export const ENCOUNTERS = {
     first_battle: {
-        name: 'Rogue Ninja Attack!',
+        name: 'Rogue Ninja Attack! - Secure the Road',
         enemies: [
-            { template: 'bandit', level: 1, gridX: 9, gridY: 2 },
-            { template: 'bandit', level: 1, gridX: 10, gridY: 4 },
-            { template: 'rogue_ninja', level: 1, gridX: 11, gridY: 3 }
+            { template: 'bandit', level: 1, gridX: 7, gridY: 1 },
+            { template: 'bandit', level: 1, gridX: 8, gridY: 5 },
+            { template: 'rogue_ninja', level: 1, gridX: 9, gridY: 3 }
         ],
         allyPositions: [
-            { gridX: 1, gridY: 2 },
+            { gridX: 2, gridY: 2 },
             { gridX: 1, gridY: 4 },
-            { gridX: 2, gridY: 3 }
+            { gridX: 3, gridY: 3 }
         ],
+        territoryStart: 6, // Initial territory divider column
         victoryDialogue: 'battle_victory_1',
         background: 'forest'
     },
     second_battle: {
-        name: 'Jonin Ambush!',
+        name: 'Jonin Ambush! - Hold the Line',
         enemies: [
-            { template: 'rogue_ninja', level: 2, gridX: 9, gridY: 1 },
-            { template: 'rogue_ninja', level: 2, gridX: 10, gridY: 5 },
-            { template: 'rogue_ninja', level: 2, gridX: 11, gridY: 3 },
+            { template: 'rogue_ninja', level: 2, gridX: 7, gridY: 1 },
+            { template: 'rogue_ninja', level: 2, gridX: 8, gridY: 6 },
+            { template: 'rogue_ninja', level: 2, gridX: 9, gridY: 4 },
             { template: 'jonin', level: 3, gridX: 10, gridY: 3 }
         ],
         allyPositions: [
-            { gridX: 1, gridY: 2 },
-            { gridX: 1, gridY: 4 },
-            { gridX: 2, gridY: 3 }
+            { gridX: 2, gridY: 2 },
+            { gridX: 1, gridY: 5 },
+            { gridX: 3, gridY: 4 }
         ],
+        territoryStart: 6,
         victoryDialogue: 'battle_victory_2',
         background: 'forest'
     },
     training_battle: {
-        name: 'Training Exercise',
+        name: 'Training Exercise - Push Practice',
         enemies: [
-            { template: 'bandit', level: 1, gridX: 9, gridY: 3 },
-            { template: 'bandit', level: 1, gridX: 10, gridY: 4 }
+            { template: 'bandit', level: 1, gridX: 8, gridY: 3 },
+            { template: 'bandit', level: 1, gridX: 9, gridY: 5 }
         ],
         allyPositions: [
-            { gridX: 1, gridY: 2 },
+            { gridX: 2, gridY: 2 },
             { gridX: 1, gridY: 4 },
-            { gridX: 2, gridY: 3 }
+            { gridX: 3, gridY: 3 }
         ],
+        territoryStart: 6,
         victoryDialogue: null,
         background: 'field'
     }

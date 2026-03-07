@@ -1,58 +1,71 @@
 /**
  * Character definitions for Team 7 and enemies.
- * Each character has base stats, jutsu, and growth rates.
+ * Into the Breach-inspired: low HP, high stakes, every point matters.
+ *
+ * TERRITORY BATTLE STATS:
+ * - hp: 3-8 range. Every hit is dangerous.
+ * - chakra: 3-6 range. Jutsu are precious resources.
+ * - attack: 1-4 base damage.
+ * - defense: 0-2, reduces incoming damage (min 1 after reduction).
+ * - speed: Turn order priority + evasion modifier.
+ * - evasion: Base % chance to dodge (0-25). Speed adds to this.
+ * - move: Tiles you can move within your territory.
+ * - push: How many columns an attack pushes the target.
+ * - range: Attack reach in tiles (manhattan distance).
  */
 export const CHARACTER_TEMPLATES = {
     naruto: {
         name: 'Naruto Uzumaki',
         sprite: 'naruto',
         baseStats: {
-            hp: 120,
-            chakra: 80,
-            attack: 14,
-            defense: 10,
-            speed: 12,
-            range: 1,
-            move: 4
-        },
-        growthRates: {
-            hp: 15,
-            chakra: 8,
+            hp: 6,
+            chakra: 4,
             attack: 2,
             defense: 1,
-            speed: 2
+            speed: 3,
+            evasion: 10,
+            move: 3,
+            push: 1,
+            range: 1
+        },
+        growthRates: {
+            hp: 1,
+            chakra: 1,
+            attack: 1,
+            defense: 0,
+            speed: 1,
+            evasion: 2
         },
         jutsu: [
             {
-                name: 'Shadow Clone Jutsu',
-                description: 'Creates shadow clones to attack. Hits all adjacent enemies.',
-                chakraCost: 15,
-                power: 18,
+                name: 'Shadow Clone Barrage',
+                description: 'Clones slam the enemy back. Push 2 columns.',
+                chakraCost: 2,
+                power: 1,
+                push: 2,
                 range: 1,
-                area: 'adjacent',
-                type: 'physical',
+                type: 'push',
                 animation: 'clone'
             },
             {
                 name: 'Rasengan',
-                description: 'A powerful spiraling chakra sphere.',
-                chakraCost: 30,
-                power: 40,
+                description: 'Devastating spiral sphere. 3 damage + push 1.',
+                chakraCost: 3,
+                power: 3,
+                push: 1,
                 range: 1,
-                area: 'single',
-                type: 'chakra',
+                type: 'attack',
                 animation: 'rasengan'
             },
             {
                 name: 'Talk no Jutsu',
-                description: 'Inspire an ally, boosting their attack for 3 turns.',
-                chakraCost: 10,
+                description: 'PULL an enemy into your territory. Triggers Attacks of Opportunity!',
+                chakraCost: 2,
                 power: 0,
+                pull: true,
                 range: 3,
-                area: 'single',
-                type: 'buff',
-                effect: { stat: 'attack', bonus: 5, duration: 3 },
-                animation: 'buff'
+                type: 'pull',
+                animation: 'pull'
             }
         ]
     },
@@ -60,51 +73,53 @@ export const CHARACTER_TEMPLATES = {
         name: 'Sasuke Uchiha',
         sprite: 'sasuke',
         baseStats: {
-            hp: 100,
-            chakra: 100,
-            attack: 16,
-            defense: 9,
-            speed: 14,
-            range: 1,
-            move: 5
+            hp: 5,
+            chakra: 5,
+            attack: 3,
+            defense: 0,
+            speed: 4,
+            evasion: 20,
+            move: 3,
+            push: 1,
+            range: 1
         },
         growthRates: {
-            hp: 10,
-            chakra: 12,
-            attack: 3,
-            defense: 1,
-            speed: 2
+            hp: 1,
+            chakra: 1,
+            attack: 1,
+            defense: 0,
+            speed: 1,
+            evasion: 3
         },
         jutsu: [
             {
                 name: 'Fireball Jutsu',
-                description: 'Launches a massive fireball at enemies in a line.',
-                chakraCost: 20,
-                power: 28,
+                description: 'Ranged fire blast. 2 damage + push 1. Range 3.',
+                chakraCost: 2,
+                power: 2,
+                push: 1,
                 range: 3,
-                area: 'line',
-                type: 'chakra',
+                type: 'attack',
                 animation: 'fireball'
             },
             {
                 name: 'Chidori',
-                description: 'Lightning-fast piercing attack with immense power.',
-                chakraCost: 35,
-                power: 45,
+                description: 'Lightning pierce. 4 damage, ignores defense.',
+                chakraCost: 4,
+                power: 4,
+                push: 0,
                 range: 1,
-                area: 'single',
-                type: 'chakra',
+                type: 'pierce',
                 animation: 'chidori'
             },
             {
                 name: 'Sharingan',
-                description: 'Activate Sharingan to boost speed and evasion for 3 turns.',
-                chakraCost: 15,
+                description: 'Predict attacks. +30% evasion for 3 turns.',
+                chakraCost: 2,
                 power: 0,
                 range: 0,
-                area: 'self',
                 type: 'buff',
-                effect: { stat: 'speed', bonus: 8, duration: 3 },
+                effect: { stat: 'evasion', bonus: 30, duration: 3 },
                 animation: 'sharingan'
             }
         ]
@@ -113,51 +128,52 @@ export const CHARACTER_TEMPLATES = {
         name: 'Sakura Haruno',
         sprite: 'sakura',
         baseStats: {
-            hp: 90,
-            chakra: 120,
-            attack: 18,
-            defense: 8,
-            speed: 10,
-            range: 1,
-            move: 3
-        },
-        growthRates: {
-            hp: 8,
-            chakra: 15,
+            hp: 4,
+            chakra: 6,
             attack: 2,
             defense: 1,
-            speed: 1
+            speed: 2,
+            evasion: 5,
+            move: 2,
+            push: 2,
+            range: 1
+        },
+        growthRates: {
+            hp: 1,
+            chakra: 1,
+            attack: 1,
+            defense: 1,
+            speed: 0,
+            evasion: 1
         },
         jutsu: [
             {
                 name: 'Healing Jutsu',
-                description: 'Restore HP to an ally.',
-                chakraCost: 20,
-                power: 35,
+                description: 'Restore 3 HP to an ally. Range 3.',
+                chakraCost: 2,
+                power: 3,
                 range: 3,
-                area: 'single',
                 type: 'heal',
                 animation: 'heal'
             },
             {
                 name: 'Cherry Blossom Impact',
-                description: 'Channel chakra into a devastating punch.',
-                chakraCost: 25,
-                power: 42,
+                description: 'Superhuman punch. 2 damage + push 3!',
+                chakraCost: 3,
+                power: 2,
+                push: 3,
                 range: 1,
-                area: 'single',
-                type: 'physical',
+                type: 'push',
                 animation: 'impact'
             },
             {
-                name: 'Chakra Boost',
-                description: 'Boost an ally\'s defense for 3 turns.',
-                chakraCost: 15,
+                name: 'Chakra Shield',
+                description: 'Grant ally +2 defense for 3 turns.',
+                chakraCost: 2,
                 power: 0,
                 range: 3,
-                area: 'single',
                 type: 'buff',
-                effect: { stat: 'defense', bonus: 6, duration: 3 },
+                effect: { stat: 'defense', bonus: 2, duration: 3 },
                 animation: 'buff'
             }
         ]
@@ -169,102 +185,117 @@ export const ENEMY_TEMPLATES = {
         name: 'Bandit',
         sprite: 'bandit',
         baseStats: {
-            hp: 60,
-            chakra: 20,
-            attack: 10,
-            defense: 6,
-            speed: 8,
-            range: 1,
-            move: 3
+            hp: 3,
+            chakra: 1,
+            attack: 1,
+            defense: 0,
+            speed: 2,
+            evasion: 5,
+            move: 2,
+            push: 1,
+            range: 1
         },
         jutsu: [
             {
-                name: 'Slash',
-                description: 'A basic sword slash.',
+                name: 'Shove',
+                description: 'Push target 1 column.',
                 chakraCost: 0,
-                power: 12,
+                power: 1,
+                push: 1,
                 range: 1,
-                area: 'single',
-                type: 'physical',
+                type: 'push',
                 animation: 'slash'
             }
         ],
-        xpReward: 20,
+        xpReward: 15,
         ai: 'aggressive'
     },
     rogue_ninja: {
         name: 'Rogue Ninja',
         sprite: 'enemy_ninja',
         baseStats: {
-            hp: 80,
-            chakra: 50,
-            attack: 13,
-            defense: 8,
-            speed: 11,
-            range: 1,
-            move: 4
+            hp: 4,
+            chakra: 3,
+            attack: 2,
+            defense: 1,
+            speed: 3,
+            evasion: 15,
+            move: 3,
+            push: 1,
+            range: 1
         },
         jutsu: [
             {
-                name: 'Shuriken Barrage',
-                description: 'Throws a flurry of shuriken.',
-                chakraCost: 10,
-                power: 16,
+                name: 'Shuriken Volley',
+                description: 'Ranged attack. 2 damage. Range 3.',
+                chakraCost: 1,
+                power: 2,
+                push: 0,
                 range: 3,
-                area: 'single',
-                type: 'physical',
+                type: 'attack',
                 animation: 'shuriken'
             },
             {
-                name: 'Water Clone',
-                description: 'Creates a water clone to attack.',
-                chakraCost: 15,
-                power: 20,
-                range: 1,
-                area: 'single',
-                type: 'chakra',
+                name: 'Body Flicker',
+                description: 'PULL an ally into enemy territory!',
+                chakraCost: 2,
+                power: 0,
+                pull: true,
+                range: 2,
+                type: 'pull',
                 animation: 'clone'
             }
         ],
-        xpReward: 35,
+        xpReward: 25,
         ai: 'tactical'
     },
     jonin: {
         name: 'Enemy Jonin',
         sprite: 'enemy_ninja',
         baseStats: {
-            hp: 150,
-            chakra: 100,
-            attack: 20,
-            defense: 14,
-            speed: 15,
-            range: 1,
-            move: 5
+            hp: 8,
+            chakra: 5,
+            attack: 3,
+            defense: 2,
+            speed: 4,
+            evasion: 20,
+            move: 3,
+            push: 2,
+            range: 1
         },
         jutsu: [
             {
                 name: 'Earth Wall',
-                description: 'Raises a wall, boosting own defense.',
-                chakraCost: 20,
+                description: '+2 defense for 2 turns.',
+                chakraCost: 2,
                 power: 0,
                 range: 0,
-                area: 'self',
                 type: 'buff',
-                effect: { stat: 'defense', bonus: 8, duration: 2 },
+                effect: { stat: 'defense', bonus: 2, duration: 2 },
                 animation: 'buff'
             },
             {
-                name: 'Lightning Strike',
-                description: 'A powerful lightning attack.',
-                chakraCost: 30,
-                power: 35,
+                name: 'Lightning Spear',
+                description: '3 damage + push 2. Range 2. Ignores defense.',
+                chakraCost: 3,
+                power: 3,
+                push: 2,
                 range: 2,
-                area: 'single',
-                type: 'chakra',
+                type: 'pierce',
                 animation: 'chidori'
+            },
+            {
+                name: 'Summoning: Pull',
+                description: 'PULL target into your territory!',
+                chakraCost: 3,
+                power: 0,
+                pull: true,
+                range: 3,
+                type: 'pull',
+                animation: 'pull'
             }
         ],
-        xpReward: 60,
+        xpReward: 50,
         ai: 'tactical'
     }
 };
@@ -277,15 +308,16 @@ export function createCharacter(templateId, level = 1) {
     if (!template) return null;
 
     const stats = { ...template.baseStats };
-    const growth = template.growthRates || { hp: 5, chakra: 5, attack: 1, defense: 1, speed: 1 };
+    const growth = template.growthRates || { hp: 1, chakra: 0, attack: 0, defense: 0, speed: 0, evasion: 1 };
 
     // Apply level-up bonuses
     for (let i = 1; i < level; i++) {
         stats.hp += growth.hp;
-        stats.chakra += growth.chakra;
+        stats.chakra += growth.chakra || 0;
         stats.attack += growth.attack;
         stats.defense += growth.defense;
         stats.speed += growth.speed;
+        stats.evasion += growth.evasion || 0;
     }
 
     return {
@@ -295,7 +327,7 @@ export function createCharacter(templateId, level = 1) {
         sprite: template.sprite,
         level,
         xp: 0,
-        xpToNext: level * 50,
+        xpToNext: level * 30,
         stats,
         maxHp: stats.hp,
         maxChakra: stats.chakra,
@@ -306,7 +338,7 @@ export function createCharacter(templateId, level = 1) {
         isAlly: !ENEMY_TEMPLATES[templateId],
         ai: template.ai || null,
         xpReward: template.xpReward || 0,
-        // Battle position (set during battle)
+        // Battle position
         gridX: 0,
         gridY: 0,
         hasMoved: false,
@@ -323,16 +355,17 @@ export function grantXP(character, amount) {
     while (character.xp >= character.xpToNext) {
         character.xp -= character.xpToNext;
         character.level++;
-        character.xpToNext = character.level * 50;
+        character.xpToNext = character.level * 30;
 
         const template = CHARACTER_TEMPLATES[character.templateId];
         if (template) {
             const g = template.growthRates;
             character.stats.hp += g.hp;
-            character.stats.chakra += g.chakra;
+            character.stats.chakra += g.chakra || 0;
             character.stats.attack += g.attack;
             character.stats.defense += g.defense;
             character.stats.speed += g.speed;
+            character.stats.evasion += g.evasion || 0;
             character.maxHp = character.stats.hp;
             character.maxChakra = character.stats.chakra;
             character.currentHp = character.maxHp;
@@ -341,4 +374,24 @@ export function grantXP(character, amount) {
         }
     }
     return messages;
+}
+
+/**
+ * Roll evasion check. Returns true if the attack is evaded.
+ */
+export function rollEvasion(attacker, defender) {
+    const evasionChance = Math.min(75, defender.stats.evasion + Math.floor(defender.stats.speed * 2));
+    const roll = Math.random() * 100;
+    return roll < evasionChance;
+}
+
+/**
+ * Calculate damage. Returns final damage (min 1 unless evaded).
+ */
+export function calculateDamage(attacker, defender, power, type) {
+    let damage = power > 0 ? power : attacker.stats.attack;
+    if (type !== 'pierce') {
+        damage = Math.max(1, damage - defender.stats.defense);
+    }
+    return damage;
 }
