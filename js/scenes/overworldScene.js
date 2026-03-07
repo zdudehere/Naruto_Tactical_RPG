@@ -196,6 +196,11 @@ export class OverworldScene {
                 this.interact();
                 this.interactCooldown = 0.3;
             }
+
+            // Open Skill Tree
+            if (input.wasPressed('KeyT')) {
+                this.game.openSkillTree();
+            }
         }
 
         // Animation
@@ -362,10 +367,14 @@ export class OverworldScene {
                 ctx.fillStyle = '#48f';
                 ctx.fillRect(barX + 70, y + 2, 60 * cpPct, 6);
 
-                // Level
+                // Level + SP indicator
                 ctx.fillStyle = '#888';
                 ctx.font = '10px "Segoe UI", sans-serif';
                 ctx.fillText(`Lv${c.level}`, barX + 140, y + 10);
+                if ((c.skillPoints || 0) > 0) {
+                    ctx.fillStyle = '#f0c030';
+                    ctx.fillText(`${c.skillPoints}SP`, barX + 170, y + 10);
+                }
             }
         }
 
@@ -375,6 +384,6 @@ export class OverworldScene {
         ctx.fillStyle = '#777';
         ctx.font = '10px "Segoe UI", sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText('SPACE: Interact  WASD: Move', CANVAS_WIDTH - 15, CANVAS_HEIGHT - 10);
+        ctx.fillText('SPACE: Interact  WASD: Move  T: Skills', CANVAS_WIDTH - 15, CANVAS_HEIGHT - 10);
     }
 }

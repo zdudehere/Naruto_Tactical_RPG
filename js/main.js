@@ -3,6 +3,7 @@ import { Input } from './input.js';
 import { TitleScene } from './scenes/titleScene.js';
 import { OverworldScene } from './scenes/overworldScene.js';
 import { BattleScene } from './scenes/battleScene.js';
+import { SkillTreeScene } from './scenes/skillTreeScene.js';
 import { createCharacter } from './data/characters.js';
 import { ENEMY_TEMPLATES } from './data/characters.js';
 import { DIALOGUES } from './data/story.js';
@@ -244,6 +245,11 @@ class Game {
     startBattle(encounterId) {
         this.scene = SCENE.BATTLE;
         this.currentScene = new BattleScene(this, encounterId);
+    }
+
+    openSkillTree() {
+        this.scene = SCENE.SKILL_TREE;
+        this.currentScene = new SkillTreeScene(this);
     }
 
     returnToOverworld() {

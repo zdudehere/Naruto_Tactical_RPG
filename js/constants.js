@@ -10,7 +10,8 @@ export const SCENE = {
     TITLE: 'title',
     OVERWORLD: 'overworld',
     BATTLE: 'battle',
-    DIALOGUE: 'dialogue'
+    DIALOGUE: 'dialogue',
+    SKILL_TREE: 'skill_tree'
 };
 
 // Directions

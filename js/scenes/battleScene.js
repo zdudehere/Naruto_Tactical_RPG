@@ -14,7 +14,7 @@ import { ENCOUNTERS } from '../data/story.js';
  * - Left side = Ally territory. Right side = Enemy territory.
  * - Units CANNOT move into opposing territory.
  * - PUSH attacks shove enemies further into their side (rightward for enemies).
- * - If pushed off the board, the unit is KO'd.
+ * - Units pushed to the board edge are stopped (no ring outs).
  * - When no enemies remain in the frontmost enemy column, territory advances.
  * - PULL attacks drag an enemy INTO your territory.
  *   When pulled in, ALL adjacent allies get a free Attack of Opportunity.
@@ -236,13 +236,10 @@ export class BattleScene {
         for (let i = 0; i < pushAmount; i++) {
             const newX = unit.gridX + direction;
 
-            // Pushed off the board = KO
+            // Clamped at board edge — no ring outs
             if (newX < 0 || newX >= BATTLE_COLS) {
-                this.grid[unit.gridY][unit.gridX] = null;
-                unit.currentHp = 0;
-                results.pushedOff = true;
-                this.addFloatingText(unit.gridX, unit.gridY, 'RING OUT!', '#ff4444', true);
-                this.addMessage(`${unit.name} was pushed off the battlefield!`);
+                this.addFloatingText(unit.gridX, unit.gridY, 'WALL!', '#f90', true);
+                this.addMessage(`${unit.name} is pushed against the edge!`);
                 return results;
             }
 
@@ -491,8 +488,21 @@ export class BattleScene {
                     }
                     return true;
                 });
-                // Regen 1 chakra per round
+                // Base regen: 1 chakra per round
                 unit.currentChakra = Math.min(unit.maxChakra, unit.currentChakra + 1);
+
+                // Passive effects from skill tree
+                const passives = unit.passives || [];
+                for (const p of passives) {
+                    if (p.passive === 'chakra_regen') {
+                        unit.currentChakra = Math.min(unit.maxChakra, unit.currentChakra + p.value);
+                        this.addFloatingText(unit.gridX, unit.gridY, `+${p.value} CP`, '#4488ff');
+                    }
+                    if (p.passive === 'hp_regen') {
+                        unit.currentHp = Math.min(unit.maxHp, unit.currentHp + p.value);
+                        this.addFloatingText(unit.gridX, unit.gridY, `+${p.value} HP`, '#44ff44');
+                    }
+                }
             }
             this.calculateTurnOrder();
         }
@@ -649,11 +659,18 @@ export class BattleScene {
                 this.actionMenuVisible = false;
                 this.jutsuMenuVisible = false;
 
-                if (jutsu.type === 'buff' && (!jutsu.effect || jutsu.range === 0)) {
+                if (jutsu.type === 'heal_all') {
+                    // Heal all allies, execute immediately
+                    this.executeJutsu(this.selectedUnit, this.selectedUnit, jutsu);
+                    this.selectedUnit.hasActed = true;
+                    this.attackRange = [];
+                    this.phase = PHASE.ANIMATING;
+                    this.animTimer = 0.8;
+                } else if (jutsu.type === 'buff' && (!jutsu.effect || jutsu.range === 0)) {
                     // Self-buff, execute immediately
                     this.executeSelfBuff(this.selectedUnit, jutsu);
-                } else if (jutsu.type === 'buff') {
-                    // Target ally for buff
+                } else if (jutsu.type === 'buff' || jutsu.type === 'heal') {
+                    // Target ally for buff/heal
                     this.calculateAllyTargetRange(this.selectedUnit, jutsu.range);
                     this.phase = PHASE.PLAYER_TARGET;
                 } else {
@@ -728,6 +745,7 @@ export class BattleScene {
             if (rollEvasion(attacker, target)) {
                 this.addFloatingText(target.gridX, target.gridY, 'EVADE!', '#44ffff', true);
                 this.addMessage(`${target.name} evades ${attacker.name}'s attack!`);
+                this.tryCounterOnEvade(target, attacker);
             } else {
                 const dmg = calculateDamage(attacker, target, attacker.stats.attack, 'physical');
                 target.currentHp = Math.max(0, target.currentHp - dmg);
@@ -855,6 +873,37 @@ export class BattleScene {
                 this.checkTerritoryAdvance();
                 break;
             }
+
+            case 'heal_all': {
+                // Heal all living allies
+                const heal = jutsu.power;
+                const allies = this.allUnits.filter(u => u.isAlly === attacker.isAlly && u.currentHp > 0);
+                for (const ally of allies) {
+                    ally.currentHp = Math.min(ally.maxHp, ally.currentHp + heal);
+                    this.addFloatingText(ally.gridX, ally.gridY, `+${heal} HP`, '#44ff44', true);
+                }
+                this.addMessage(`${attacker.name} uses ${jutsu.name}! All allies heal ${heal} HP!`);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Counter-on-evade passive: chance to deal 1 damage back when dodging.
+     */
+    tryCounterOnEvade(evader, attacker) {
+        const passives = evader.passives || [];
+        const counter = passives.find(p => p.passive === 'counter_on_evade');
+        if (!counter) return;
+        if (Math.random() * 100 >= counter.value) return;
+
+        const dmg = 1;
+        attacker.currentHp = Math.max(0, attacker.currentHp - dmg);
+        this.addFloatingText(attacker.gridX, attacker.gridY, `COUNTER -${dmg}`, '#ff44ff', true);
+        this.addMessage(`${evader.name} counters ${attacker.name} for ${dmg}!`);
+        if (attacker.currentHp <= 0) {
+            this.grid[attacker.gridY]?.[attacker.gridX] === attacker && (this.grid[attacker.gridY][attacker.gridX] = null);
+            this.addMessage(`${attacker.name} is defeated!`);
         }
     }
 
@@ -1009,6 +1058,7 @@ export class BattleScene {
             if (rollEvasion(unit, closestAlly)) {
                 this.addFloatingText(closestAlly.gridX, closestAlly.gridY, 'EVADE!', '#44ffff', true);
                 this.addMessage(`${closestAlly.name} evades ${unit.name}'s attack!`);
+                this.tryCounterOnEvade(closestAlly, unit);
             } else {
                 const dmg = calculateDamage(unit, closestAlly, unit.stats.attack, 'physical');
                 closestAlly.currentHp = Math.max(0, closestAlly.currentHp - dmg);
@@ -1043,15 +1093,35 @@ export class BattleScene {
                 if (template) totalXP += template.xpReward || 15;
             }
 
+            let anyLevelUp = false;
             for (const ally of this.game.party) {
-                grantXP(ally, totalXP);
+                const msgs = grantXP(ally, totalXP);
+                if (msgs.length > 0) anyLevelUp = true;
             }
 
+            this.game.returnToOverworld();
+
             if (this.encounter.victoryDialogue) {
-                this.game.returnToOverworld();
                 this.game.startDialogue(this.encounter.victoryDialogue);
-            } else {
-                this.game.returnToOverworld();
+            }
+
+            // If anyone leveled up, prompt skill tree
+            if (anyLevelUp && this.game.party.some(c => (c.skillPoints || 0) > 0)) {
+                const levelUpDialogue = {
+                    lines: [
+                        { speaker: 'System', text: 'Level up! You earned Skill Points. Press T on the overworld to open the Skill Tree.' }
+                    ]
+                };
+                // Use inline dialogue if no victory dialogue, otherwise it's already handled
+                if (!this.encounter.victoryDialogue) {
+                    this.game.dialogueActive = true;
+                    this.game.currentDialogue = levelUpDialogue;
+                    this.game.dialogueIndex = 0;
+                    this.game.dialogueCharIndex = 0;
+                    this.game.dialogueTimer = 0;
+                    this.game.dialogueBox.classList.remove('hidden');
+                    this.game.showCurrentDialogueLine();
+                }
             }
         } else {
             for (const ally of this.game.party) {
