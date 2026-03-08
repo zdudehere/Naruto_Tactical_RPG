@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Naruto Tactical RPG</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -13,7 +16,7 @@
             <div id="dialogue-box" class="hidden">
                 <div id="dialogue-speaker"></div>
                 <div id="dialogue-text"></div>
-                <div id="dialogue-prompt">Press SPACE to continue</div>
+                <div id="dialogue-prompt">Tap A to continue</div>
             </div>
             <div id="battle-hud" class="hidden">
                 <div id="battle-info"></div>
@@ -21,6 +24,32 @@
             </div>
         </div>
     </div>
+
+    <!-- Virtual touch controls (hidden on desktop, shown on touch devices) -->
+    <div id="touch-controls">
+        <!-- D-Pad (left side) -->
+        <div id="dpad">
+            <button class="dpad-btn dpad-up" data-dir="up" aria-label="Up">&#9650;</button>
+            <button class="dpad-btn dpad-left" data-dir="left" aria-label="Left">&#9664;</button>
+            <button class="dpad-btn dpad-center"></button>
+            <button class="dpad-btn dpad-right" data-dir="right" aria-label="Right">&#9654;</button>
+            <button class="dpad-btn dpad-down" data-dir="down" aria-label="Down">&#9660;</button>
+        </div>
+
+        <!-- Action buttons (right side) -->
+        <div id="action-btns">
+            <button class="action-touch-btn btn-a" data-key="Space" aria-label="Action">A</button>
+            <button class="action-touch-btn btn-b" data-key="Escape" aria-label="Back">B</button>
+        </div>
+
+        <!-- Utility buttons (top corners) -->
+        <div id="util-btns">
+            <button class="util-touch-btn" data-key="KeyQ" aria-label="Previous">Q</button>
+            <button class="util-touch-btn" data-key="KeyT" aria-label="Skills">T</button>
+            <button class="util-touch-btn" data-key="KeyE" aria-label="Next">E</button>
+        </div>
+    </div>
+
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
