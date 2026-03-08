@@ -1,0 +1,5079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Naruto Tactical RPG</title>
+    <style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+body {
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#game-container {
+    position: relative;
+    width: 800px;
+    height: 600px;
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
+#game-canvas {
+    display: block;
+    background: #000;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    width: 100%;
+    height: 100%;
+}
+
+#ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+#ui-overlay > * {
+    pointer-events: auto;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#dialogue-box {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #f90;
+    border-radius: 8px;
+    padding: 16px 20px;
+    color: #fff;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+#dialogue-speaker {
+    color: #f90;
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#dialogue-text {
+    min-height: 40px;
+}
+
+#dialogue-prompt {
+    text-align: right;
+    color: #888;
+    font-size: 12px;
+    margin-top: 8px;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+#battle-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#battle-info {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.unit-hud {
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 6px 10px;
+    color: #fff;
+    font-size: 12px;
+    min-width: 140px;
+}
+
+.unit-hud.ally {
+    border-color: #4a9;
+}
+
+.unit-hud.enemy {
+    border-color: #e44;
+}
+
+.unit-hud .name {
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.hp-bar, .chakra-bar {
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    margin: 2px 0;
+    overflow: hidden;
+}
+
+.hp-bar .fill {
+    height: 100%;
+    background: #4c6;
+    border-radius: 4px;
+    transition: width 0.3s;
+}
+
+.chakra-bar .fill {
+    height: 100%;
+    background: #48f;
+    border-radius: 4px;
+    transition: width 0.3s;
+}
+
+.bar-label {
+    font-size: 10px;
+    color: #aaa;
+    display: flex;
+    justify-content: space-between;
+}
+
+#action-menu {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #f90;
+    border-radius: 6px;
+    color: #fff;
+    padding: 10px 18px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.action-btn:hover, .action-btn.selected {
+    background: #f90;
+    color: #000;
+}
+
+.action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.jutsu-submenu {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid #f90;
+    border-radius: 6px;
+    padding: 8px;
+    min-width: 200px;
+}
+
+.jutsu-btn {
+    background: transparent;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #fff;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    text-align: left;
+    transition: all 0.15s;
+}
+
+.jutsu-btn:hover {
+    background: #333;
+    border-color: #f90;
+}
+
+.jutsu-btn .cost {
+    color: #48f;
+    font-size: 11px;
+    float: right;
+}
+
+.turn-banner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 2px 2px 4px #000;
+    animation: fadeInOut 1.5s forwards;
+    pointer-events: none;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* ============================================================
+   VIRTUAL TOUCH CONTROLS — hidden on desktop, shown on touch
+   ============================================================ */
+
+#touch-controls {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+/* D-Pad */
+#dpad {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: grid;
+    grid-template-columns: 52px 52px 52px;
+    grid-template-rows: 52px 52px 52px;
+    gap: 2px;
+    pointer-events: auto;
+}
+
+.dpad-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 18px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.dpad-center {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+}
+
+.dpad-btn.active {
+    background: rgba(255, 153, 0, 0.5);
+    border-color: #f90;
+    color: #fff;
+}
+
+/* Action buttons */
+#action-btns {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 12px;
+    pointer-events: auto;
+}
+
+.action-touch-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    border: 2px solid;
+}
+
+.btn-a {
+    background: rgba(68, 170, 68, 0.25);
+    border-color: rgba(68, 170, 68, 0.6);
+    color: #4a4;
+}
+
+.btn-a.active {
+    background: rgba(68, 170, 68, 0.6);
+    color: #fff;
+}
+
+.btn-b {
+    background: rgba(204, 68, 68, 0.25);
+    border-color: rgba(204, 68, 68, 0.6);
+    color: #c44;
+}
+
+.btn-b.active {
+    background: rgba(204, 68, 68, 0.6);
+    color: #fff;
+}
+
+/* Utility buttons (Q, T, E) */
+#util-btns {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.util-touch-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.util-touch-btn.active {
+    background: rgba(255, 153, 0, 0.5);
+    border-color: #f90;
+    color: #fff;
+}
+
+/* ============================================================
+   RESPONSIVE / MOBILE LAYOUT
+   ============================================================ */
+
+/* Show touch controls on devices that support touch */
+@media (pointer: coarse) {
+    #touch-controls {
+        display: block;
+    }
+
+    body {
+        justify-content: flex-start;
+        padding-top: env(safe-area-inset-top, 0);
+    }
+
+    #game-container {
+        width: 100vw;
+        height: calc(100vw * 0.75); /* 4:3 aspect ratio */
+        max-height: 60vh;
+        max-height: 60dvh;
+    }
+
+    #dialogue-box {
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+
+    #dialogue-prompt {
+        font-size: 11px;
+    }
+
+    .action-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+
+    .jutsu-submenu {
+        bottom: 60px;
+        min-width: 180px;
+    }
+
+    .jutsu-btn {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+}
+
+/* Very small screens (iPhone SE, etc.) */
+@media (pointer: coarse) and (max-width: 400px) {
+    #dpad {
+        bottom: 12px;
+        left: 8px;
+        grid-template-columns: 44px 44px 44px;
+        grid-template-rows: 44px 44px 44px;
+    }
+
+    .action-touch-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 16px;
+    }
+
+    #action-btns {
+        bottom: 30px;
+        right: 10px;
+        gap: 8px;
+    }
+
+    .util-touch-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 12px;
+    }
+}
+
+/* Landscape phone */
+@media (pointer: coarse) and (orientation: landscape) {
+    #game-container {
+        width: auto;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
+        aspect-ratio: 4 / 3;
+    }
+
+    #dpad {
+        bottom: 10px;
+        left: 10px;
+        grid-template-columns: 44px 44px 44px;
+        grid-template-rows: 44px 44px 44px;
+    }
+
+    .action-touch-btn {
+        width: 50px;
+        height: 50px;
+    }
+
+    #action-btns {
+        bottom: 10px;
+        right: 10px;
+    }
+}
+
+/* Tablet */
+@media (pointer: coarse) and (min-width: 768px) {
+    #game-container {
+        max-height: 70vh;
+        max-height: 70dvh;
+    }
+
+    #dpad {
+        bottom: 30px;
+        left: 30px;
+        grid-template-columns: 58px 58px 58px;
+        grid-template-rows: 58px 58px 58px;
+    }
+
+    .action-touch-btn {
+        width: 68px;
+        height: 68px;
+        font-size: 22px;
+    }
+
+    .util-touch-btn {
+        width: 46px;
+        height: 46px;
+        font-size: 16px;
+    }
+}
+
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="ui-overlay" class="hidden">
+            <div id="dialogue-box" class="hidden">
+                <div id="dialogue-speaker"></div>
+                <div id="dialogue-text"></div>
+                <div id="dialogue-prompt">Tap A to continue</div>
+            </div>
+            <div id="battle-hud" class="hidden">
+                <div id="battle-info"></div>
+                <div id="action-menu" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Virtual touch controls -->
+    <div id="touch-controls">
+        <div id="dpad">
+            <button class="dpad-btn dpad-up" data-dir="up" aria-label="Up">&#9650;</button>
+            <button class="dpad-btn dpad-left" data-dir="left" aria-label="Left">&#9664;</button>
+            <button class="dpad-btn dpad-center"></button>
+            <button class="dpad-btn dpad-right" data-dir="right" aria-label="Right">&#9654;</button>
+            <button class="dpad-btn dpad-down" data-dir="down" aria-label="Down">&#9660;</button>
+        </div>
+        <div id="action-btns">
+            <button class="action-touch-btn btn-a" data-key="Space" aria-label="Action">A</button>
+            <button class="action-touch-btn btn-b" data-key="Escape" aria-label="Back">B</button>
+        </div>
+        <div id="util-btns">
+            <button class="util-touch-btn" data-key="KeyQ" aria-label="Previous">Q</button>
+            <button class="util-touch-btn" data-key="KeyT" aria-label="Skills">T</button>
+            <button class="util-touch-btn" data-key="KeyE" aria-label="Next">E</button>
+        </div>
+    </div>
+
+    <script>
+// ========== js/constants.js ==========
+// Canvas and rendering
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 600;
+const TILE_SIZE = 32;
+const MAP_COLS = 25;
+const MAP_ROWS = 19;
+
+// Game states
+const SCENE = {
+    TITLE: 'title',
+    OVERWORLD: 'overworld',
+    BATTLE: 'battle',
+    DIALOGUE: 'dialogue',
+    SKILL_TREE: 'skill_tree'
+};
+
+// Directions
+const DIR = {
+    UP: 'up',
+    DOWN: 'down',
+    LEFT: 'left',
+    RIGHT: 'right'
+};
+
+// Tile types
+const TILE = {
+    GRASS: 0,
+    PATH: 1,
+    WATER: 2,
+    WALL: 3,
+    BUILDING: 4,
+    TREE: 5,
+    DOOR: 6,
+    BRIDGE: 7,
+    FENCE: 8,
+    FLOWER: 9
+};
+
+// Tile colors
+const TILE_COLORS = {
+    [TILE.GRASS]: '#3a7d32',
+    [TILE.PATH]: '#c4a862',
+    [TILE.WATER]: '#2277bb',
+    [TILE.WALL]: '#666666',
+    [TILE.BUILDING]: '#8b6b4a',
+    [TILE.TREE]: '#2d5a1e',
+    [TILE.DOOR]: '#5a3a1a',
+    [TILE.BRIDGE]: '#9a7a4a',
+    [TILE.FENCE]: '#7a5a3a',
+    [TILE.FLOWER]: '#3a7d32'
+};
+
+// Battle constants
+const BATTLE_COLS = 12;
+const BATTLE_ROWS = 8;
+const BATTLE_TILE_SIZE = 56;
+const BATTLE_OFFSET_X = 64;
+const BATTLE_OFFSET_Y = 76;
+
+// Character colors
+const CHAR_COLORS = {
+    naruto: {
+        hair: '#f0c030',
+        outfit: '#f07020',
+        accent: '#2060c0',
+        skin: '#f0c8a0',
+        headband: '#3060c0'
+    },
+    sasuke: {
+        hair: '#1a1a2e',
+        outfit: '#2a2a4e',
+        accent: '#e8e8f0',
+        skin: '#f0d0b0',
+        headband: '#3060c0'
+    },
+    sakura: {
+        hair: '#f08090',
+        outfit: '#cc2244',
+        accent: '#f0d0d0',
+        skin: '#f0d0b8',
+        headband: '#cc2244'
+    },
+    kakashi: {
+        hair: '#c0c0c8',
+        outfit: '#2a3a2a',
+        accent: '#404850',
+        skin: '#d8c0a0',
+        headband: '#3060c0'
+    },
+    enemy_ninja: {
+        hair: '#4a4a4a',
+        outfit: '#3a3a5a',
+        accent: '#6a6a8a',
+        skin: '#d8b890',
+        headband: '#804020'
+    },
+    bandit: {
+        hair: '#5a3a1a',
+        outfit: '#5a5a3a',
+        accent: '#8a7a5a',
+        skin: '#d8b890',
+        headband: '#5a3a1a'
+    }
+};
+
+// Animation
+const ANIM_SPEED = 150; // ms per frame
+const MOVE_SPEED = 3; // pixels per frame in overworld
+const WALK_FRAMES = 4;
+
+// ========== js/input.js ==========
+class Input {
+    constructor() {
+        this.keys = {};
+        this.justPressed = {};
+        this.mouseX = 0;
+        this.mouseY = 0;
+        this.mouseClicked = false;
+        this.mouseDown = false;
+
+        // Track active touch directions (for D-pad hold behavior)
+        this._touchDirs = { dx: 0, dy: 0 };
+
+        window.addEventListener('keydown', (e) => {
+            if (!this.keys[e.code]) {
+                this.justPressed[e.code] = true;
+            }
+            this.keys[e.code] = true;
+            e.preventDefault();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            this.keys[e.code] = false;
+            e.preventDefault();
+        });
+
+        const canvas = document.getElementById('game-canvas');
+
+        // ── Mouse events ──
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            this.mouseX = (e.clientX - rect.left) * scaleX;
+            this.mouseY = (e.clientY - rect.top) * scaleY;
+        });
+
+        canvas.addEventListener('mousedown', () => {
+            this.mouseDown = true;
+            this.mouseClicked = true;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            this.mouseDown = false;
+        });
+
+        // ── Touch events on canvas (for tapping tiles / skill tree nodes) ──
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            this.mouseX = (touch.clientX - rect.left) * scaleX;
+            this.mouseY = (touch.clientY - rect.top) * scaleY;
+            this.mouseDown = true;
+            this.mouseClicked = true;
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.mouseDown = false;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            this.mouseX = (touch.clientX - rect.left) * scaleX;
+            this.mouseY = (touch.clientY - rect.top) * scaleY;
+        }, { passive: false });
+
+        // ── Virtual button bindings ──
+        this._setupVirtualControls();
+    }
+
+    /**
+     * Bind virtual on-screen buttons to keyboard codes.
+     * Each button has a data-key attribute (e.g. "Space", "Escape", "KeyT").
+     * D-pad buttons have data-dir (e.g. "up", "down", "left", "right").
+     */
+    _setupVirtualControls() {
+        // D-pad buttons
+        document.querySelectorAll('[data-dir]').forEach(btn => {
+            const dir = btn.getAttribute('data-dir');
+            const code = {
+                up: 'ArrowUp', down: 'ArrowDown',
+                left: 'ArrowLeft', right: 'ArrowRight'
+            }[dir];
+            if (!code) return;
+
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (!this.keys[code]) this.justPressed[code] = true;
+                this.keys[code] = true;
+                btn.classList.add('active');
+                // Update held direction
+                this._updateTouchDirs();
+            }, { passive: false });
+
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.keys[code] = false;
+                btn.classList.remove('active');
+                this._updateTouchDirs();
+            }, { passive: false });
+
+            btn.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                this.keys[code] = false;
+                btn.classList.remove('active');
+                this._updateTouchDirs();
+            }, { passive: false });
+        });
+
+        // Action buttons (A, B, T, Q, E)
+        document.querySelectorAll('[data-key]').forEach(btn => {
+            const code = btn.getAttribute('data-key');
+
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (!this.keys[code]) this.justPressed[code] = true;
+                this.keys[code] = true;
+                btn.classList.add('active');
+            }, { passive: false });
+
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.keys[code] = false;
+                btn.classList.remove('active');
+            }, { passive: false });
+
+            btn.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                this.keys[code] = false;
+                btn.classList.remove('active');
+            }, { passive: false });
+        });
+    }
+
+    _updateTouchDirs() {
+        let dx = 0, dy = 0;
+        if (this.keys['ArrowUp']) dy = -1;
+        if (this.keys['ArrowDown']) dy = 1;
+        if (this.keys['ArrowLeft']) dx = -1;
+        if (this.keys['ArrowRight']) dx = 1;
+        this._touchDirs = { dx, dy };
+    }
+
+    isDown(code) {
+        return !!this.keys[code];
+    }
+
+    wasPressed(code) {
+        return !!this.justPressed[code];
+    }
+
+    endFrame() {
+        this.justPressed = {};
+        this.mouseClicked = false;
+    }
+
+    getDirection() {
+        let dx = 0, dy = 0;
+        if (this.isDown('ArrowUp') || this.isDown('KeyW')) dy = -1;
+        if (this.isDown('ArrowDown') || this.isDown('KeyS')) dy = 1;
+        if (this.isDown('ArrowLeft') || this.isDown('KeyA')) dx = -1;
+        if (this.isDown('ArrowRight') || this.isDown('KeyD')) dx = 1;
+        return { dx, dy };
+    }
+}
+
+// ========== js/sprites.js ==========
+
+// Sprite cache to avoid redrawing every frame
+const spriteCache = {};
+
+/**
+ * Draw a top-down character sprite procedurally.
+ * Each character is drawn as a 32x32 pixel sprite with:
+ * - Round head with hair
+ * - Headband
+ * - Body/outfit
+ * - Simple limbs for walk animation
+ */
+function getCharacterSprite(name, direction, frame) {
+    const key = `${name}_${direction}_${frame}`;
+    if (spriteCache[key]) return spriteCache[key];
+
+    const canvas = document.createElement('canvas');
+    canvas.width = TILE_SIZE;
+    canvas.height = TILE_SIZE;
+    const ctx = canvas.getContext('2d');
+    const colors = CHAR_COLORS[name] || CHAR_COLORS.enemy_ninja;
+
+    drawCharacter(ctx, colors, direction, frame, name);
+
+    spriteCache[key] = canvas;
+    return canvas;
+}
+
+function drawCharacter(ctx, colors, direction, frame, name) {
+    const cx = 16; // center x
+    const walkOffset = Math.sin(frame * Math.PI / 2) * 2;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(cx, 30, 8, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body/outfit
+    ctx.fillStyle = colors.outfit;
+    ctx.fillRect(cx - 6, 14, 12, 12);
+
+    // Arms
+    ctx.fillStyle = colors.outfit;
+    if (direction === 'left' || direction === 'right') {
+        const armY = 15 + Math.abs(walkOffset);
+        ctx.fillRect(cx - 8, armY, 3, 8);
+        ctx.fillRect(cx + 5, armY, 3, 8);
+    } else {
+        ctx.fillRect(cx - 9, 15 + walkOffset, 3, 8);
+        ctx.fillRect(cx + 6, 15 - walkOffset, 3, 8);
+    }
+
+    // Hands
+    ctx.fillStyle = colors.skin;
+    if (direction === 'left' || direction === 'right') {
+        ctx.fillRect(cx - 8, 22 + Math.abs(walkOffset), 3, 2);
+        ctx.fillRect(cx + 5, 22 + Math.abs(walkOffset), 3, 2);
+    } else {
+        ctx.fillRect(cx - 9, 22 + walkOffset, 3, 2);
+        ctx.fillRect(cx + 6, 22 - walkOffset, 3, 2);
+    }
+
+    // Legs
+    ctx.fillStyle = colors.accent;
+    const legSpread = walkOffset * 1.5;
+    ctx.fillRect(cx - 4, 25, 3, 5);
+    ctx.fillRect(cx + 1, 25, 3, 5);
+    // Feet
+    ctx.fillStyle = '#333';
+    if (direction === 'up' || direction === 'down') {
+        ctx.fillRect(cx - 4 - legSpread * 0.3, 29, 3, 2);
+        ctx.fillRect(cx + 1 + legSpread * 0.3, 29, 3, 2);
+    } else {
+        ctx.fillRect(cx - 3, 29, 3, 2);
+        ctx.fillRect(cx + 1, 29, 3, 2);
+    }
+
+    // Collar / outfit accent
+    ctx.fillStyle = colors.accent;
+    ctx.fillRect(cx - 4, 14, 8, 3);
+
+    // Head
+    ctx.fillStyle = colors.skin;
+    ctx.beginPath();
+    ctx.arc(cx, 9, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hair
+    ctx.fillStyle = colors.hair;
+    if (direction === 'down') {
+        // Hair on top and sides
+        ctx.beginPath();
+        ctx.arc(cx, 7, 7, Math.PI, Math.PI * 2);
+        ctx.fill();
+        // Spiky bits
+        if (name === 'naruto') {
+            drawNarutoHairFront(ctx, cx);
+        } else if (name === 'sasuke') {
+            drawSasukeHairFront(ctx, cx);
+        } else if (name === 'sakura') {
+            drawSakuraHairFront(ctx, cx);
+        } else {
+            // Generic hair
+            ctx.fillRect(cx - 7, 3, 14, 5);
+        }
+    } else if (direction === 'up') {
+        // Full hair from back
+        ctx.beginPath();
+        ctx.arc(cx, 8, 8, 0, Math.PI * 2);
+        ctx.fill();
+        if (name === 'sasuke') {
+            // Sasuke's spiky back hair
+            drawTriangle(ctx, cx - 3, 1, cx, -4, cx + 1, 1);
+            drawTriangle(ctx, cx + 2, 1, cx + 5, -3, cx + 6, 2);
+            drawTriangle(ctx, cx - 6, 2, cx - 5, -3, cx - 2, 1);
+        } else if (name === 'naruto') {
+            drawTriangle(ctx, cx - 4, 2, cx - 2, -2, cx, 2);
+            drawTriangle(ctx, cx, 2, cx + 2, -2, cx + 4, 2);
+        }
+    } else if (direction === 'left') {
+        ctx.beginPath();
+        ctx.arc(cx, 7, 7, Math.PI * 0.8, Math.PI * 2.2);
+        ctx.fill();
+        ctx.fillRect(cx - 1, 2, 6, 5);
+    } else {
+        ctx.beginPath();
+        ctx.arc(cx, 7, 7, Math.PI * 0.8, Math.PI * 2.2);
+        ctx.fill();
+        ctx.fillRect(cx - 5, 2, 6, 5);
+    }
+
+    // Headband
+    ctx.fillStyle = colors.headband;
+    if (direction === 'down') {
+        ctx.fillRect(cx - 7, 5, 14, 3);
+        // Metal plate
+        ctx.fillStyle = '#c0c0d0';
+        ctx.fillRect(cx - 3, 5, 6, 3);
+        // Konoha symbol (simple leaf)
+        ctx.fillStyle = '#333';
+        ctx.fillRect(cx - 1, 6, 2, 1);
+    } else if (direction !== 'up') {
+        ctx.fillRect(cx - 6, 5, 12, 3);
+    }
+
+    // Face features (only when facing down)
+    if (direction === 'down') {
+        // Eyes
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(cx - 4, 9, 3, 2);
+        ctx.fillRect(cx + 1, 9, 3, 2);
+
+        ctx.fillStyle = '#111';
+        ctx.fillRect(cx - 3, 9, 2, 2);
+        ctx.fillRect(cx + 2, 9, 2, 2);
+
+        // Special eye for Sasuke
+        if (name === 'sasuke') {
+            ctx.fillStyle = '#111';
+            ctx.fillRect(cx - 3, 9, 2, 2);
+            ctx.fillRect(cx + 2, 9, 2, 2);
+        }
+
+        // Naruto whisker marks
+        if (name === 'naruto') {
+            ctx.fillStyle = '#d0a060';
+            ctx.fillRect(cx - 6, 11, 3, 1);
+            ctx.fillRect(cx + 3, 11, 3, 1);
+            ctx.fillRect(cx - 6, 13, 3, 1);
+            ctx.fillRect(cx + 3, 13, 3, 1);
+        }
+
+        // Mouth
+        ctx.fillStyle = '#c08060';
+        ctx.fillRect(cx - 1, 13, 2, 1);
+    } else if (direction === 'left') {
+        // Side face
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(cx - 4, 9, 3, 2);
+        ctx.fillStyle = '#111';
+        ctx.fillRect(cx - 4, 9, 2, 2);
+    } else if (direction === 'right') {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(cx + 1, 9, 3, 2);
+        ctx.fillStyle = '#111';
+        ctx.fillRect(cx + 2, 9, 2, 2);
+    }
+}
+
+function drawNarutoHairFront(ctx, cx) {
+    ctx.fillRect(cx - 7, 2, 14, 4);
+    // Spiky hair
+    drawTriangle(ctx, cx - 6, 3, cx - 4, -2, cx - 2, 3);
+    drawTriangle(ctx, cx - 2, 3, cx, -3, cx + 2, 3);
+    drawTriangle(ctx, cx + 2, 3, cx + 4, -2, cx + 6, 3);
+}
+
+function drawSasukeHairFront(ctx, cx) {
+    ctx.fillRect(cx - 8, 1, 16, 6);
+    // Side bangs
+    ctx.fillRect(cx - 8, 5, 4, 6);
+    ctx.fillRect(cx + 5, 5, 4, 4);
+    // Spiky top
+    drawTriangle(ctx, cx - 2, 2, cx, -3, cx + 2, 2);
+    drawTriangle(ctx, cx + 3, 2, cx + 6, -4, cx + 7, 3);
+    drawTriangle(ctx, cx - 7, 3, cx - 6, -4, cx - 3, 2);
+}
+
+function drawSakuraHairFront(ctx, cx) {
+    ctx.fillRect(cx - 8, 1, 16, 7);
+    // Longer side hair
+    ctx.fillRect(cx - 8, 5, 3, 10);
+    ctx.fillRect(cx + 5, 5, 3, 10);
+    // Headband ribbon on top
+    ctx.fillStyle = '#cc2244';
+    ctx.fillRect(cx - 4, 3, 8, 2);
+}
+
+function drawTriangle(ctx, x1, y1, x2, y2, x3, y3) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x3, y3);
+    ctx.closePath();
+    ctx.fill();
+}
+
+/**
+ * Draw a battle sprite (larger, more detailed)
+ */
+function getBattleSprite(name, direction, frame, isSelected) {
+    const key = `battle_${name}_${direction}_${frame}_${isSelected}`;
+    if (spriteCache[key]) return spriteCache[key];
+
+    const size = 48;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    // Scale up the regular sprite
+    const sprite = getCharacterSprite(name, direction, frame);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(sprite, 0, 0, size, size);
+
+    // Selection highlight
+    if (isSelected) {
+        ctx.strokeStyle = '#ff0';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, size - 2, size - 2);
+    }
+
+    spriteCache[key] = canvas;
+    return canvas;
+}
+
+/**
+ * Draw tile decorations (trees, flowers, etc.)
+ */
+function drawTileDecoration(ctx, type, x, y, size) {
+    switch (type) {
+        case 5: // TREE
+            // Trunk
+            ctx.fillStyle = '#5a3a1a';
+            ctx.fillRect(x + size * 0.35, y + size * 0.5, size * 0.3, size * 0.4);
+            // Canopy
+            ctx.fillStyle = '#1a5a12';
+            ctx.beginPath();
+            ctx.arc(x + size * 0.5, y + size * 0.35, size * 0.38, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#2d7a20';
+            ctx.beginPath();
+            ctx.arc(x + size * 0.45, y + size * 0.3, size * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+        case 9: // FLOWER
+            ctx.fillStyle = '#3a7d32';
+            ctx.fillRect(x, y, size, size);
+            // Flowers
+            const flowerColors = ['#f44', '#ff0', '#f8f', '#fff'];
+            for (let i = 0; i < 3; i++) {
+                ctx.fillStyle = flowerColors[i % flowerColors.length];
+                const fx = x + 5 + (i * 10);
+                const fy = y + 8 + (i % 2) * 10;
+                ctx.beginPath();
+                ctx.arc(fx, fy, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            break;
+        case 8: // FENCE
+            ctx.fillStyle = '#7a5a3a';
+            ctx.fillRect(x, y + size * 0.3, size, 3);
+            ctx.fillRect(x, y + size * 0.6, size, 3);
+            ctx.fillRect(x + 4, y + size * 0.2, 3, size * 0.6);
+            ctx.fillRect(x + size - 7, y + size * 0.2, 3, size * 0.6);
+            break;
+    }
+}
+
+/**
+ * Draw a building with proper top-down perspective
+ */
+function drawBuilding(ctx, x, y, w, h, color) {
+    // Main building
+    ctx.fillStyle = color || '#8b6b4a';
+    ctx.fillRect(x, y, w, h);
+
+    // Roof (darker top edge)
+    ctx.fillStyle = '#5a3a2a';
+    ctx.fillRect(x - 2, y - 2, w + 4, 6);
+
+    // Wall lines
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, w, h);
+
+    // Window
+    if (w >= 64) {
+        ctx.fillStyle = '#88ccee';
+        ctx.fillRect(x + 8, y + 10, 10, 10);
+        ctx.fillRect(x + w - 18, y + 10, 10, 10);
+        // Window frames
+        ctx.strokeStyle = '#5a3a1a';
+        ctx.strokeRect(x + 8, y + 10, 10, 10);
+        ctx.strokeRect(x + w - 18, y + 10, 10, 10);
+    }
+}
+
+// ========== js/data/maps.js ==========
+
+const T = TILE;
+
+/**
+ * Konoha Village map - 25x19 tiles
+ * Legend: 0=grass, 1=path, 2=water, 3=wall, 4=building, 5=tree, 6=door, 7=bridge, 8=fence, 9=flower
+ */
+const MAPS = {
+    konoha: {
+        name: 'Hidden Leaf Village',
+        width: MAP_COLS,
+        height: MAP_ROWS,
+        tiles: [
+            [5,5,5,5,5,5,5,5,3,3,3,3,3,3,3,3,3,5,5,5,5,5,5,5,5],
+            [5,5,0,0,0,5,5,0,3,4,4,4,4,4,4,4,3,0,5,5,0,0,0,5,5],
+            [5,0,0,9,0,0,0,0,3,4,4,4,4,4,4,4,3,0,0,0,0,9,0,0,5],
+            [5,0,9,0,0,0,0,1,3,3,3,3,6,3,3,3,3,1,0,0,0,0,9,0,5],
+            [5,0,0,0,8,8,8,1,0,0,0,0,1,0,0,0,0,1,8,8,8,0,0,0,5],
+            [5,0,0,0,8,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,8,0,0,0,5],
+            [0,0,0,0,8,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,8,0,0,0,0],
+            [0,0,5,0,0,0,0,1,0,0,3,3,3,3,3,0,0,1,0,0,0,0,5,0,0],
+            [0,0,5,0,0,0,0,1,0,0,3,4,4,4,3,0,0,1,0,0,0,0,5,0,0],
+            [1,1,1,1,1,1,1,1,0,0,3,4,4,4,3,0,0,1,1,1,1,1,1,1,1],
+            [0,0,5,0,0,0,0,1,0,0,3,3,6,3,3,0,0,1,0,0,0,0,5,0,0],
+            [0,0,5,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,5,0,0],
+            [0,0,0,0,8,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,8,0,0,0,0],
+            [5,0,0,0,8,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,8,0,0,0,5],
+            [5,0,0,0,8,8,8,1,0,0,0,0,0,0,0,0,0,1,8,8,8,0,0,0,5],
+            [5,0,9,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,9,0,5],
+            [5,0,0,9,0,0,0,0,0,2,2,2,7,2,2,2,0,0,0,0,0,9,0,0,5],
+            [5,5,0,0,0,0,5,0,0,2,2,2,7,2,2,2,0,0,5,0,0,0,0,5,5],
+            [5,5,5,5,5,5,5,5,2,2,2,2,2,2,2,2,2,5,5,5,5,5,5,5,5],
+        ],
+        // NPCs on the map
+        npcs: [
+            {
+                id: 'kakashi',
+                name: 'Kakashi Sensei',
+                sprite: 'kakashi',
+                x: 12, y: 5,
+                direction: 'down',
+                dialogue: 'kakashi_intro'
+            },
+            {
+                id: 'villager1',
+                name: 'Villager',
+                sprite: 'bandit',
+                x: 3, y: 8,
+                direction: 'right',
+                dialogue: 'villager_hint'
+            },
+            {
+                id: 'gate_guard',
+                name: 'Gate Guard',
+                sprite: 'enemy_ninja',
+                x: 0, y: 9,
+                direction: 'right',
+                dialogue: 'gate_guard_intro'
+            }
+        ],
+        // Player start position
+        playerStart: { x: 12, y: 9 },
+        // Trigger zones (events when player walks on tile)
+        triggers: [
+            {
+                x: 12, y: 3, // Hokage building door
+                type: 'dialogue',
+                dialogueId: 'hokage_building'
+            },
+            {
+                x: 12, y: 10, // Ramen shop door
+                type: 'dialogue',
+                dialogueId: 'ramen_shop'
+            },
+            {
+                x: 0, y: 9, // Village gate - triggers battle
+                type: 'story_check',
+                storyFlag: 'talked_to_kakashi',
+                dialogueId: 'gate_not_ready',
+                elseDialogueId: 'gate_battle'
+            }
+        ],
+        // Solid tiles (cannot walk on)
+        solidTiles: [T.WALL, T.BUILDING, T.WATER, T.TREE, T.FENCE]
+    },
+
+    training_grounds: {
+        name: 'Training Grounds',
+        width: MAP_COLS,
+        height: MAP_ROWS,
+        tiles: [
+            [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,0,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,0,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+            [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+        ],
+        npcs: [],
+        playerStart: { x: 1, y: 9 },
+        triggers: [],
+        solidTiles: [T.WALL, T.BUILDING, T.WATER, T.TREE, T.FENCE]
+    }
+};
+
+/**
+ * Check if a tile position is solid (blocked) on the given map.
+ */
+function isSolid(mapId, x, y) {
+    const map = MAPS[mapId];
+    if (!map) return true;
+    if (x < 0 || y < 0 || x >= map.width || y >= map.height) return true;
+    return map.solidTiles.includes(map.tiles[y][x]);
+}
+
+/**
+ * Get NPC at the given position.
+ */
+function getNPCAt(mapId, x, y) {
+    const map = MAPS[mapId];
+    if (!map) return null;
+    return map.npcs.find(n => n.x === x && n.y === y) || null;
+}
+
+/**
+ * Get trigger at the given position.
+ */
+function getTriggerAt(mapId, x, y) {
+    const map = MAPS[mapId];
+    if (!map) return null;
+    return map.triggers.find(t => t.x === x && t.y === y) || null;
+}
+
+// ========== js/data/characters.js ==========
+/**
+ * Character definitions for Team 7 and enemies.
+ * Into the Breach-inspired: low HP, high stakes, every point matters.
+ *
+ * TERRITORY BATTLE STATS:
+ * - hp: 3-8 range. Every hit is dangerous.
+ * - chakra: 3-6 range. Jutsu are precious resources.
+ * - attack: 1-4 base damage.
+ * - defense: 0-2, reduces incoming damage (min 1 after reduction).
+ * - speed: Turn order priority + evasion modifier.
+ * - evasion: Base % chance to dodge (0-25). Speed adds to this.
+ * - move: Tiles you can move within your territory.
+ * - push: How many columns an attack pushes the target.
+ * - range: Attack reach in tiles (manhattan distance).
+ */
+const CHARACTER_TEMPLATES = {
+    naruto: {
+        name: 'Naruto Uzumaki',
+        sprite: 'naruto',
+        baseStats: {
+            hp: 6,
+            chakra: 4,
+            attack: 2,
+            defense: 1,
+            speed: 3,
+            evasion: 10,
+            move: 3,
+            push: 1,
+            range: 1
+        },
+        growthRates: {
+            hp: 1,
+            chakra: 1,
+            attack: 1,
+            defense: 0,
+            speed: 1,
+            evasion: 2
+        },
+        jutsu: [
+            {
+                name: 'Shadow Clone Barrage',
+                description: 'Clones slam the enemy back. Push 2 columns.',
+                chakraCost: 2,
+                power: 1,
+                push: 2,
+                range: 1,
+                type: 'push',
+                animation: 'clone'
+            },
+            {
+                name: 'Rasengan',
+                description: 'Devastating spiral sphere. 3 damage + push 1.',
+                chakraCost: 3,
+                power: 3,
+                push: 1,
+                range: 1,
+                type: 'attack',
+                animation: 'rasengan'
+            },
+            {
+                name: 'Talk no Jutsu',
+                description: 'PULL an enemy into your territory. Triggers Attacks of Opportunity!',
+                chakraCost: 2,
+                power: 0,
+                pull: true,
+                range: 3,
+                type: 'pull',
+                animation: 'pull'
+            }
+        ]
+    },
+    sasuke: {
+        name: 'Sasuke Uchiha',
+        sprite: 'sasuke',
+        baseStats: {
+            hp: 5,
+            chakra: 5,
+            attack: 3,
+            defense: 0,
+            speed: 4,
+            evasion: 20,
+            move: 3,
+            push: 1,
+            range: 1
+        },
+        growthRates: {
+            hp: 1,
+            chakra: 1,
+            attack: 1,
+            defense: 0,
+            speed: 1,
+            evasion: 3
+        },
+        jutsu: [
+            {
+                name: 'Fireball Jutsu',
+                description: 'Ranged fire blast. 2 damage + push 1. Range 3.',
+                chakraCost: 2,
+                power: 2,
+                push: 1,
+                range: 3,
+                type: 'attack',
+                animation: 'fireball'
+            },
+            {
+                name: 'Chidori',
+                description: 'Lightning pierce. 4 damage, ignores defense.',
+                chakraCost: 4,
+                power: 4,
+                push: 0,
+                range: 1,
+                type: 'pierce',
+                animation: 'chidori'
+            },
+            {
+                name: 'Sharingan',
+                description: 'Predict attacks. +30% evasion for 3 turns.',
+                chakraCost: 2,
+                power: 0,
+                range: 0,
+                type: 'buff',
+                effect: { stat: 'evasion', bonus: 30, duration: 3 },
+                animation: 'sharingan'
+            }
+        ]
+    },
+    sakura: {
+        name: 'Sakura Haruno',
+        sprite: 'sakura',
+        baseStats: {
+            hp: 4,
+            chakra: 6,
+            attack: 2,
+            defense: 1,
+            speed: 2,
+            evasion: 5,
+            move: 2,
+            push: 2,
+            range: 1
+        },
+        growthRates: {
+            hp: 1,
+            chakra: 1,
+            attack: 1,
+            defense: 1,
+            speed: 0,
+            evasion: 1
+        },
+        jutsu: [
+            {
+                name: 'Healing Jutsu',
+                description: 'Restore 3 HP to an ally. Range 3.',
+                chakraCost: 2,
+                power: 3,
+                range: 3,
+                type: 'heal',
+                animation: 'heal'
+            },
+            {
+                name: 'Cherry Blossom Impact',
+                description: 'Superhuman punch. 2 damage + push 3!',
+                chakraCost: 3,
+                power: 2,
+                push: 3,
+                range: 1,
+                type: 'push',
+                animation: 'impact'
+            },
+            {
+                name: 'Chakra Shield',
+                description: 'Grant ally +2 defense for 3 turns.',
+                chakraCost: 2,
+                power: 0,
+                range: 3,
+                type: 'buff',
+                effect: { stat: 'defense', bonus: 2, duration: 3 },
+                animation: 'buff'
+            }
+        ]
+    }
+};
+
+const ENEMY_TEMPLATES = {
+    bandit: {
+        name: 'Bandit',
+        sprite: 'bandit',
+        baseStats: {
+            hp: 3,
+            chakra: 1,
+            attack: 1,
+            defense: 0,
+            speed: 2,
+            evasion: 5,
+            move: 2,
+            push: 1,
+            range: 1
+        },
+        jutsu: [
+            {
+                name: 'Shove',
+                description: 'Push target 1 column.',
+                chakraCost: 0,
+                power: 1,
+                push: 1,
+                range: 1,
+                type: 'push',
+                animation: 'slash'
+            }
+        ],
+        xpReward: 15,
+        ai: 'aggressive'
+    },
+    rogue_ninja: {
+        name: 'Rogue Ninja',
+        sprite: 'enemy_ninja',
+        baseStats: {
+            hp: 4,
+            chakra: 3,
+            attack: 2,
+            defense: 1,
+            speed: 3,
+            evasion: 15,
+            move: 3,
+            push: 1,
+            range: 1
+        },
+        jutsu: [
+            {
+                name: 'Shuriken Volley',
+                description: 'Ranged attack. 2 damage. Range 3.',
+                chakraCost: 1,
+                power: 2,
+                push: 0,
+                range: 3,
+                type: 'attack',
+                animation: 'shuriken'
+            },
+            {
+                name: 'Body Flicker',
+                description: 'PULL an ally into enemy territory!',
+                chakraCost: 2,
+                power: 0,
+                pull: true,
+                range: 2,
+                type: 'pull',
+                animation: 'clone'
+            }
+        ],
+        xpReward: 25,
+        ai: 'tactical'
+    },
+    jonin: {
+        name: 'Enemy Jonin',
+        sprite: 'enemy_ninja',
+        baseStats: {
+            hp: 8,
+            chakra: 5,
+            attack: 3,
+            defense: 2,
+            speed: 4,
+            evasion: 20,
+            move: 3,
+            push: 2,
+            range: 1
+        },
+        jutsu: [
+            {
+                name: 'Earth Wall',
+                description: '+2 defense for 2 turns.',
+                chakraCost: 2,
+                power: 0,
+                range: 0,
+                type: 'buff',
+                effect: { stat: 'defense', bonus: 2, duration: 2 },
+                animation: 'buff'
+            },
+            {
+                name: 'Lightning Spear',
+                description: '3 damage + push 2. Range 2. Ignores defense.',
+                chakraCost: 3,
+                power: 3,
+                push: 2,
+                range: 2,
+                type: 'pierce',
+                animation: 'chidori'
+            },
+            {
+                name: 'Summoning: Pull',
+                description: 'PULL target into your territory!',
+                chakraCost: 3,
+                power: 0,
+                pull: true,
+                range: 3,
+                type: 'pull',
+                animation: 'pull'
+            }
+        ],
+        xpReward: 50,
+        ai: 'tactical'
+    }
+};
+
+/**
+ * SKILL TREES
+ *
+ * Each character has a tree of ~16 nodes across 5 tiers.
+ * Node types:
+ *   'stat'          — small stat boost (+1 HP, +1 Attack, etc.)
+ *   'jutsu_upgrade' — improve an existing jutsu property
+ *   'jutsu'         — unlock a brand new jutsu
+ *   'passive'       — permanent triggered/aura ability
+ *
+ * Nodes with `exclusive` share a group — only one per group can be unlocked.
+ * `requires` lists prerequisite node IDs.
+ */
+const SKILL_TREES = {
+    naruto: [
+        // ── Tier 1 (no prereqs) ──
+        { id: 'n1', name: '+1 HP', tier: 1, type: 'stat', effect: { stat: 'hp', value: 1 }, requires: [],
+          description: 'Uzumaki stamina. Max HP +1.' },
+        { id: 'n2', name: '+1 Chakra', tier: 1, type: 'stat', effect: { stat: 'chakra', value: 1 }, requires: [],
+          description: 'Deeper reserves. Max Chakra +1.' },
+        { id: 'n3', name: '+1 Speed', tier: 1, type: 'stat', effect: { stat: 'speed', value: 1 }, requires: [],
+          description: 'Quicker on your feet. Speed +1.' },
+
+        // ── Tier 2 ──
+        { id: 'n4', name: 'Clone Force', tier: 2, type: 'jutsu_upgrade',
+          effect: { jutsu: 'Shadow Clone Barrage', property: 'push', value: 3 },
+          requires: ['n1'], description: 'Shadow Clone Barrage push 2 → 3.' },
+        { id: 'n5', name: '+1 Attack', tier: 2, type: 'stat', effect: { stat: 'attack', value: 1 },
+          requires: ['n3'], description: 'Harder hits. Attack +1.' },
+        { id: 'n6', name: '+5 Evasion', tier: 2, type: 'stat', effect: { stat: 'evasion', value: 5 },
+          requires: ['n3'], description: 'Unpredictable movement. Evasion +5.' },
+        { id: 'n7', name: 'Rasengan Mastery', tier: 2, type: 'jutsu_upgrade',
+          effect: { jutsu: 'Rasengan', property: 'chakraCost', value: 2 },
+          requires: ['n2'], description: 'Rasengan chakra cost 3 → 2.' },
+
+        // ── Tier 3 ──
+        { id: 'n8', name: '+1 Move', tier: 3, type: 'stat', effect: { stat: 'move', value: 1 },
+          requires: ['n5'], description: 'Extended range of motion. Move +1.' },
+        { id: 'n9', name: '+1 HP', tier: 3, type: 'stat', effect: { stat: 'hp', value: 1 },
+          requires: ['n4'], description: 'Tougher body. Max HP +1.' },
+        { id: 'n10', name: 'Mass Shadow Clones', tier: 3, type: 'jutsu',
+          effect: { jutsu: {
+              name: 'Mass Shadow Clones', description: 'Clones hit all adjacent enemies. 1 dmg + push 1.',
+              chakraCost: 3, power: 1, push: 1, range: 1, type: 'push', animation: 'clone', aoe: true
+          }},
+          requires: ['n4'], description: 'New jutsu: hit all adjacent enemies.' },
+        { id: 'n11', name: '+1 Chakra', tier: 3, type: 'stat', effect: { stat: 'chakra', value: 1 },
+          requires: ['n7'], description: 'Growing reserves. Max Chakra +1.' },
+
+        // ── Tier 4 ──
+        { id: 'n12', name: '+1 Attack', tier: 4, type: 'stat', effect: { stat: 'attack', value: 1 },
+          requires: ['n8'], description: 'Refined taijutsu. Attack +1.' },
+        { id: 'n13', name: '+1 Defense', tier: 4, type: 'stat', effect: { stat: 'defense', value: 1 },
+          requires: ['n9'], description: 'Battle-hardened. Defense +1.' },
+        { id: 'n14', name: 'Chakra Regen', tier: 4, type: 'passive',
+          effect: { passive: 'chakra_regen', value: 1 },
+          requires: ['n11'], description: 'Passive: Recover 1 chakra per turn.' },
+
+        // ── Tier 5 (capstones — mutually exclusive) ──
+        { id: 'n15', name: 'Sage Mode', tier: 5, type: 'jutsu', exclusive: 'naruto_capstone',
+          effect: { jutsu: {
+              name: 'Sage Mode', description: 'Nature energy. +2 attack, +2 defense for 3 turns.',
+              chakraCost: 4, power: 0, range: 0, type: 'buff',
+              effect: { stat: 'attack', bonus: 2, duration: 3 }, animation: 'rasengan'
+          }},
+          requires: ['n13', 'n14'], description: 'Sage Mode: balanced power boost.' },
+        { id: 'n16', name: 'Nine-Tails Cloak', tier: 5, type: 'jutsu', exclusive: 'naruto_capstone',
+          effect: { jutsu: {
+              name: 'Nine-Tails Cloak', description: 'Kyuubi power! +3 attack for 3 turns.',
+              chakraCost: 3, power: 0, range: 0, type: 'buff',
+              effect: { stat: 'attack', bonus: 3, duration: 3 }, animation: 'clone'
+          }},
+          requires: ['n12'], description: 'Nine-Tails Cloak: raw offensive power.' },
+    ],
+
+    sasuke: [
+        // ── Tier 1 ──
+        { id: 's1', name: '+1 Speed', tier: 1, type: 'stat', effect: { stat: 'speed', value: 1 }, requires: [],
+          description: 'Lightning reflexes. Speed +1.' },
+        { id: 's2', name: '+1 Chakra', tier: 1, type: 'stat', effect: { stat: 'chakra', value: 1 }, requires: [],
+          description: 'Uchiha focus. Max Chakra +1.' },
+        { id: 's3', name: '+1 Attack', tier: 1, type: 'stat', effect: { stat: 'attack', value: 1 }, requires: [],
+          description: 'Sharper strikes. Attack +1.' },
+
+        // ── Tier 2 ──
+        { id: 's4', name: 'Fireball Range', tier: 2, type: 'jutsu_upgrade',
+          effect: { jutsu: 'Fireball Jutsu', property: 'range', value: 4 },
+          requires: ['s3'], description: 'Fireball Jutsu range 3 → 4.' },
+        { id: 's5', name: '+5 Evasion', tier: 2, type: 'stat', effect: { stat: 'evasion', value: 5 },
+          requires: ['s1'], description: 'Hard to pin down. Evasion +5.' },
+        { id: 's6', name: 'Sharingan+', tier: 2, type: 'jutsu_upgrade',
+          effect: { jutsu: 'Sharingan', property: 'effect', value: { stat: 'evasion', bonus: 30, duration: 5 } },
+          requires: ['s1'], description: 'Sharingan duration 3 → 5 turns.' },
+        { id: 's7', name: '+1 HP', tier: 2, type: 'stat', effect: { stat: 'hp', value: 1 },
+          requires: ['s2'], description: 'Endurance training. Max HP +1.' },
+
+        // ── Tier 3 ──
+        { id: 's8', name: '+1 Attack', tier: 3, type: 'stat', effect: { stat: 'attack', value: 1 },
+          requires: ['s4'], description: 'Lethal precision. Attack +1.' },
+        { id: 's9', name: 'Chidori Power', tier: 3, type: 'jutsu_upgrade',
+          effect: { jutsu: 'Chidori', property: 'power', value: 5 },
+          requires: ['s3', 's7'], description: 'Chidori damage 4 → 5.' },
+        { id: 's10', name: 'Counter-Eye', tier: 3, type: 'passive',
+          effect: { passive: 'counter_on_evade', value: 15 },
+          requires: ['s6'], description: 'Passive: 15% chance to counter when dodging.' },
+        { id: 's11', name: '+1 Range', tier: 3, type: 'stat', effect: { stat: 'range', value: 1 },
+          requires: ['s5'], description: 'Extended reach. Attack range +1.' },
+
+        // ── Tier 4 ──
+        { id: 's12', name: '+1 Speed', tier: 4, type: 'stat', effect: { stat: 'speed', value: 1 },
+          requires: ['s8'], description: 'Blinding speed. Speed +1.' },
+        { id: 's13', name: '+1 Defense', tier: 4, type: 'stat', effect: { stat: 'defense', value: 1 },
+          requires: ['s10'], description: 'Sharingan foresight. Defense +1.' },
+        { id: 's14', name: '+1 Chakra', tier: 4, type: 'stat', effect: { stat: 'chakra', value: 1 },
+          requires: ['s9'], description: 'Deeper reserves. Max Chakra +1.' },
+
+        // ── Tier 5 (capstones) ──
+        { id: 's15', name: 'Curse Mark', tier: 5, type: 'jutsu', exclusive: 'sasuke_capstone',
+          effect: { jutsu: {
+              name: 'Curse Mark', description: 'Dark power. +3 attack, +1 move for 2 turns.',
+              chakraCost: 3, power: 0, range: 0, type: 'buff',
+              effect: { stat: 'attack', bonus: 3, duration: 2 }, animation: 'chidori'
+          }},
+          requires: ['s12'], description: 'Curse Mark: explosive short burst.' },
+        { id: 's16', name: 'Amaterasu', tier: 5, type: 'jutsu', exclusive: 'sasuke_capstone',
+          effect: { jutsu: {
+              name: 'Amaterasu', description: 'Black flames. 5 pierce damage. Range 4.',
+              chakraCost: 5, power: 5, push: 0, range: 4, type: 'pierce', animation: 'fireball'
+          }},
+          requires: ['s13', 's14'], description: 'Amaterasu: devastating ranged pierce.' },
+    ],
+
+    sakura: [
+        // ── Tier 1 ──
+        { id: 'k1', name: '+1 Chakra', tier: 1, type: 'stat', effect: { stat: 'chakra', value: 1 }, requires: [],
+          description: 'Precise control. Max Chakra +1.' },
+        { id: 'k2', name: '+1 Defense', tier: 1, type: 'stat', effect: { stat: 'defense', value: 1 }, requires: [],
+          description: 'Inner strength. Defense +1.' },
+        { id: 'k3', name: '+1 HP', tier: 1, type: 'stat', effect: { stat: 'hp', value: 1 }, requires: [],
+          description: 'Medical resilience. Max HP +1.' },
+
+        // ── Tier 2 ──
+        { id: 'k4', name: 'Healing Power', tier: 2, type: 'jutsu_upgrade',
+          effect: { jutsu: 'Healing Jutsu', property: 'power', value: 4 },
+          requires: ['k1'], description: 'Healing Jutsu restores 3 → 4 HP.' },
+        { id: 'k5', name: '+1 Attack', tier: 2, type: 'stat', effect: { stat: 'attack', value: 1 },
+          requires: ['k3'], description: 'Chakra-enhanced fists. Attack +1.' },
+        { id: 'k6', name: 'Shield Duration', tier: 2, type: 'jutsu_upgrade',
+          effect: { jutsu: 'Chakra Shield', property: 'effect', value: { stat: 'defense', bonus: 2, duration: 5 } },
+          requires: ['k2'], description: 'Chakra Shield duration 3 → 5 turns.' },
+        { id: 'k7', name: '+5 Evasion', tier: 2, type: 'stat', effect: { stat: 'evasion', value: 5 },
+          requires: ['k2'], description: 'Light on her feet. Evasion +5.' },
+
+        // ── Tier 3 ──
+        { id: 'k8', name: '+1 Chakra', tier: 3, type: 'stat', effect: { stat: 'chakra', value: 1 },
+          requires: ['k4'], description: 'Expanded reserves. Max Chakra +1.' },
+        { id: 'k9', name: 'Impact Force', tier: 3, type: 'jutsu_upgrade',
+          effect: { jutsu: 'Cherry Blossom Impact', property: 'push', value: 4 },
+          requires: ['k5'], description: 'Cherry Blossom Impact push 3 → 4.' },
+        { id: 'k10', name: '+1 Move', tier: 3, type: 'stat', effect: { stat: 'move', value: 1 },
+          requires: ['k7'], description: 'Swift positioning. Move +1.' },
+        { id: 'k11', name: 'Healing Range', tier: 3, type: 'jutsu_upgrade',
+          effect: { jutsu: 'Healing Jutsu', property: 'range', value: 4 },
+          requires: ['k4'], description: 'Healing Jutsu range 3 → 4.' },
+
+        // ── Tier 4 ──
+        { id: 'k12', name: '+1 Defense', tier: 4, type: 'stat', effect: { stat: 'defense', value: 1 },
+          requires: ['k6', 'k8'], description: 'Iron will. Defense +1.' },
+        { id: 'k13', name: '+1 Attack', tier: 4, type: 'stat', effect: { stat: 'attack', value: 1 },
+          requires: ['k9'], description: 'Monster strength. Attack +1.' },
+        { id: 'k14', name: 'Chakra Regen', tier: 4, type: 'passive',
+          effect: { passive: 'chakra_regen', value: 1 },
+          requires: ['k8'], description: 'Passive: Recover 1 chakra per turn.' },
+
+        // ── Tier 5 (capstones) ──
+        { id: 'k15', name: 'Mitotic Regen', tier: 5, type: 'passive', exclusive: 'sakura_capstone',
+          effect: { passive: 'hp_regen', value: 1 },
+          requires: ['k12'], description: 'Passive: Regenerate 1 HP per turn.' },
+        { id: 'k16', name: 'Hundred Healings', tier: 5, type: 'jutsu', exclusive: 'sakura_capstone',
+          effect: { jutsu: {
+              name: 'Hundred Healings', description: 'Heal all allies for 2 HP.',
+              chakraCost: 4, power: 2, range: 99, type: 'heal_all', animation: 'heal'
+          }},
+          requires: ['k14'], description: 'New jutsu: heal entire team.' },
+    ],
+};
+
+/**
+ * Create a new character instance from a template.
+ */
+function createCharacter(templateId, level = 1) {
+    const template = CHARACTER_TEMPLATES[templateId] || ENEMY_TEMPLATES[templateId];
+    if (!template) return null;
+
+    const stats = { ...template.baseStats };
+    const isAlly = !ENEMY_TEMPLATES[templateId];
+
+    // Enemies still use growth rates (no skill tree)
+    if (!isAlly) {
+        const growth = template.growthRates || { hp: 1, chakra: 0, attack: 0, defense: 0, speed: 0, evasion: 1 };
+        for (let i = 1; i < level; i++) {
+            stats.hp += growth.hp;
+            stats.chakra += growth.chakra || 0;
+            stats.attack += growth.attack;
+            stats.defense += growth.defense;
+            stats.speed += growth.speed;
+            stats.evasion += growth.evasion || 0;
+        }
+    }
+
+    return {
+        id: templateId + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        templateId,
+        name: template.name,
+        sprite: template.sprite,
+        level,
+        xp: 0,
+        xpToNext: level * 30,
+        stats,
+        maxHp: stats.hp,
+        maxChakra: stats.chakra,
+        currentHp: stats.hp,
+        currentChakra: stats.chakra,
+        jutsu: template.jutsu.map(j => ({ ...j })),
+        buffs: [],
+        passives: [],
+        isAlly,
+        ai: template.ai || null,
+        xpReward: template.xpReward || 0,
+        // Skill tree state (allies only)
+        skillPoints: 0,
+        unlockedNodes: [],
+        // Battle position
+        gridX: 0,
+        gridY: 0,
+        hasMoved: false,
+        hasActed: false
+    };
+}
+
+/**
+ * Give XP to a character and handle level ups.
+ * Allies earn Skill Points instead of auto-stat growth.
+ */
+function grantXP(character, amount) {
+    character.xp += amount;
+    const messages = [];
+    while (character.xp >= character.xpToNext) {
+        character.xp -= character.xpToNext;
+        character.level++;
+        character.xpToNext = character.level * 30;
+
+        if (character.isAlly) {
+            // Grant 1 Skill Point — no auto-stat growth
+            character.skillPoints = (character.skillPoints || 0) + 1;
+            character.currentHp = character.maxHp;
+            character.currentChakra = character.maxChakra;
+            messages.push(`${character.name} leveled up to ${character.level}! +1 SP`);
+        } else {
+            // Enemies still use growth rates
+            const template = ENEMY_TEMPLATES[character.templateId];
+            if (template) {
+                const g = template.growthRates || { hp: 1, chakra: 0, attack: 0, defense: 0, speed: 0, evasion: 1 };
+                character.stats.hp += g.hp;
+                character.stats.chakra += g.chakra || 0;
+                character.stats.attack += g.attack;
+                character.stats.defense += g.defense;
+                character.stats.speed += g.speed;
+                character.stats.evasion += g.evasion || 0;
+                character.maxHp = character.stats.hp;
+                character.maxChakra = character.stats.chakra;
+            }
+            messages.push(`${character.name} leveled up to ${character.level}!`);
+        }
+    }
+    return messages;
+}
+
+/**
+ * Check if a skill node can be unlocked by a character.
+ */
+function canUnlockNode(character, nodeId) {
+    const tree = SKILL_TREES[character.templateId];
+    if (!tree) return false;
+
+    const node = tree.find(n => n.id === nodeId);
+    if (!node) return false;
+
+    const unlocked = character.unlockedNodes || [];
+
+    // Already unlocked
+    if (unlocked.includes(nodeId)) return false;
+
+    // Not enough SP
+    if ((character.skillPoints || 0) < 1) return false;
+
+    // Prerequisites not met
+    if (node.requires.length > 0 && !node.requires.every(r => unlocked.includes(r))) return false;
+
+    // Exclusive group: check if another node in same group is already unlocked
+    if (node.exclusive) {
+        const groupNodes = tree.filter(n => n.exclusive === node.exclusive);
+        if (groupNodes.some(n => unlocked.includes(n.id))) return false;
+    }
+
+    return true;
+}
+
+/**
+ * Unlock a skill tree node and apply its effect to the character.
+ * Returns a description string of what was gained, or null if failed.
+ */
+function unlockNode(character, nodeId) {
+    if (!canUnlockNode(character, nodeId)) return null;
+
+    const tree = SKILL_TREES[character.templateId];
+    const node = tree.find(n => n.id === nodeId);
+
+    character.skillPoints--;
+    if (!character.unlockedNodes) character.unlockedNodes = [];
+    character.unlockedNodes.push(nodeId);
+    if (!character.passives) character.passives = [];
+
+    switch (node.type) {
+        case 'stat': {
+            const { stat, value } = node.effect;
+            character.stats[stat] += value;
+            if (stat === 'hp') {
+                character.maxHp = character.stats.hp;
+                character.currentHp = Math.min(character.currentHp + value, character.maxHp);
+            }
+            if (stat === 'chakra') {
+                character.maxChakra = character.stats.chakra;
+                character.currentChakra = Math.min(character.currentChakra + value, character.maxChakra);
+            }
+            break;
+        }
+        case 'jutsu_upgrade': {
+            const { jutsu: jutsuName, property, value } = node.effect;
+            const jutsu = character.jutsu.find(j => j.name === jutsuName);
+            if (jutsu) {
+                if (typeof value === 'object') {
+                    jutsu[property] = { ...value };
+                } else {
+                    jutsu[property] = value;
+                }
+            }
+            break;
+        }
+        case 'jutsu': {
+            const newJutsu = { ...node.effect.jutsu };
+            if (newJutsu.effect) newJutsu.effect = { ...newJutsu.effect };
+            character.jutsu.push(newJutsu);
+            break;
+        }
+        case 'passive': {
+            character.passives.push({ ...node.effect });
+            break;
+        }
+    }
+
+    return node.description;
+}
+
+/**
+ * Roll evasion check. Returns true if the attack is evaded.
+ */
+function rollEvasion(attacker, defender) {
+    const evasionChance = Math.min(75, defender.stats.evasion + Math.floor(defender.stats.speed * 2));
+    const roll = Math.random() * 100;
+    return roll < evasionChance;
+}
+
+/**
+ * Calculate damage. Returns final damage (min 1 unless evaded).
+ */
+function calculateDamage(attacker, defender, power, type) {
+    let damage = power > 0 ? power : attacker.stats.attack;
+    if (type !== 'pierce') {
+        damage = Math.max(1, damage - defender.stats.defense);
+    }
+    return damage;
+}
+
+// ========== js/data/story.js ==========
+/**
+ * Dialogue trees and story data.
+ * Each dialogue is an array of lines with speaker and text.
+ * Special actions can trigger battles, set flags, etc.
+ */
+const DIALOGUES = {
+    kakashi_intro: {
+        lines: [
+            { speaker: 'Kakashi', text: "Ah, there you are. Team 7, assemble." },
+            { speaker: 'Kakashi', text: "We've received a mission from the Hokage. Rogue ninja have been spotted near the village gate." },
+            { speaker: 'Naruto', text: "Alright! Finally a real mission! I've been waiting for this, believe it!" },
+            { speaker: 'Sasuke', text: "...Let's just get it done." },
+            { speaker: 'Sakura', text: "I'm ready, Kakashi Sensei!" },
+            { speaker: 'Kakashi', text: "Remember - this is territorial warfare. Push enemies back to claim ground." },
+            { speaker: 'Kakashi', text: "And be careful of pull techniques - if you're dragged into enemy territory, they'll all get a free shot at you." },
+            { speaker: 'Kakashi', text: "Head to the village gate when you're ready. Every point of damage counts out there." },
+        ],
+        onComplete: { action: 'setFlag', flag: 'talked_to_kakashi' }
+    },
+
+    villager_hint: {
+        lines: [
+            { speaker: 'Villager', text: "I heard there are rogue ninja lurking outside the village gates..." },
+            { speaker: 'Villager', text: "You should talk to Kakashi Sensei before heading out. He's near the Hokage building." }
+        ]
+    },
+
+    gate_guard_intro: {
+        lines: [
+            { speaker: 'Gate Guard', text: "Halt! The village gate is under high alert." },
+            { speaker: 'Gate Guard', text: "Rogue ninja have been spotted in the area. Only authorized shinobi may pass." },
+            { speaker: 'Gate Guard', text: "Speak to your sensei before heading out on any missions." }
+        ]
+    },
+
+    hokage_building: {
+        lines: [
+            { speaker: '', text: "The Hokage Building looms before you. The Will of Fire burns bright within." },
+            { speaker: '', text: "A sign reads: 'Mission assignments on the second floor.'" }
+        ]
+    },
+
+    ramen_shop: {
+        lines: [
+            { speaker: 'Teuchi', text: "Welcome to Ichiraku Ramen! The finest ramen in all of Konoha!" },
+            { speaker: 'Naruto', text: "Old man Teuchi! Give me five bowls of miso ramen!" },
+            { speaker: 'Teuchi', text: "Ha! Save that appetite for after your mission, Naruto." }
+        ],
+        onComplete: {
+            action: 'heal',
+            message: "Team 7's HP and Chakra fully restored!"
+        }
+    },
+
+    gate_not_ready: {
+        lines: [
+            { speaker: '', text: "You should speak to Kakashi Sensei before leaving the village." }
+        ]
+    },
+
+    gate_battle: {
+        lines: [
+            { speaker: 'Gate Guard', text: "Team 7! The rogue ninja are just beyond the gate. Be careful!" },
+            { speaker: 'Naruto', text: "Let's go, team! Time to show them what we've got!" },
+            { speaker: 'Sasuke', text: "Stay focused. Don't do anything reckless, Naruto." },
+            { speaker: 'Sakura', text: "I'll support you both. Let's do this!" }
+        ],
+        onComplete: {
+            action: 'startBattle',
+            encounter: 'first_battle'
+        }
+    },
+
+    battle_victory_1: {
+        lines: [
+            { speaker: 'Naruto', text: "Yeah! We did it! Those guys didn't stand a chance!" },
+            { speaker: 'Sasuke', text: "They were just low-level rogues. Don't get cocky." },
+            { speaker: 'Sakura', text: "Good teamwork, everyone!" },
+            { speaker: 'Kakashi', text: "Well done, Team 7. But this was just the beginning." },
+            { speaker: 'Kakashi', text: "Our intelligence suggests there's a Jonin-level ninja leading these rogues." },
+            { speaker: 'Kakashi', text: "Rest up and prepare. The real battle is yet to come." },
+            { speaker: 'Naruto', text: "Bring it on! I'm not scared of any Jonin!" }
+        ],
+        onComplete: {
+            action: 'setFlag',
+            flag: 'completed_first_battle'
+        }
+    },
+
+    battle_victory_2: {
+        lines: [
+            { speaker: 'Naruto', text: "That was tougher than I expected..." },
+            { speaker: 'Sasuke', text: "Not bad. We're getting stronger." },
+            { speaker: 'Sakura', text: "Let me heal everyone up." },
+            { speaker: 'Kakashi', text: "Impressive work. Your teamwork is improving." },
+            { speaker: 'Kakashi', text: "The village is safe... for now. Keep training." }
+        ],
+        onComplete: {
+            action: 'setFlag',
+            flag: 'completed_second_battle'
+        }
+    },
+
+    game_complete: {
+        lines: [
+            { speaker: 'Kakashi', text: "Team 7, you've proven yourselves as true shinobi today." },
+            { speaker: 'Naruto', text: "One step closer to becoming Hokage! Believe it!" },
+            { speaker: 'Sasuke', text: "...Not bad, for a team." },
+            { speaker: 'Sakura', text: "We make a great team, don't we?" },
+            { speaker: 'Kakashi', text: "The Will of Fire burns bright in all of you. I'm proud." },
+            { speaker: '', text: "Thank you for playing! The adventure continues..." }
+        ]
+    }
+};
+
+/**
+ * Battle encounter definitions
+ */
+const ENCOUNTERS = {
+    first_battle: {
+        name: 'Rogue Ninja Attack! - Secure the Road',
+        enemies: [
+            { template: 'bandit', level: 1, gridX: 7, gridY: 1 },
+            { template: 'bandit', level: 1, gridX: 8, gridY: 5 },
+            { template: 'rogue_ninja', level: 1, gridX: 9, gridY: 3 }
+        ],
+        allyPositions: [
+            { gridX: 2, gridY: 2 },
+            { gridX: 1, gridY: 4 },
+            { gridX: 3, gridY: 3 }
+        ],
+        territoryStart: 6, // Initial territory divider column
+        victoryDialogue: 'battle_victory_1',
+        background: 'forest'
+    },
+    second_battle: {
+        name: 'Jonin Ambush! - Hold the Line',
+        enemies: [
+            { template: 'rogue_ninja', level: 2, gridX: 7, gridY: 1 },
+            { template: 'rogue_ninja', level: 2, gridX: 8, gridY: 6 },
+            { template: 'rogue_ninja', level: 2, gridX: 9, gridY: 4 },
+            { template: 'jonin', level: 3, gridX: 10, gridY: 3 }
+        ],
+        allyPositions: [
+            { gridX: 2, gridY: 2 },
+            { gridX: 1, gridY: 5 },
+            { gridX: 3, gridY: 4 }
+        ],
+        territoryStart: 6,
+        victoryDialogue: 'battle_victory_2',
+        background: 'forest'
+    },
+    training_battle: {
+        name: 'Training Exercise - Push Practice',
+        enemies: [
+            { template: 'bandit', level: 1, gridX: 8, gridY: 3 },
+            { template: 'bandit', level: 1, gridX: 9, gridY: 5 }
+        ],
+        allyPositions: [
+            { gridX: 2, gridY: 2 },
+            { gridX: 1, gridY: 4 },
+            { gridX: 3, gridY: 3 }
+        ],
+        territoryStart: 6,
+        victoryDialogue: null,
+        background: 'field'
+    }
+};
+
+// ========== js/scenes/titleScene.js ==========
+
+class TitleScene {
+    constructor(game) {
+        this.game = game;
+        this.selectedOption = 0;
+        this.options = ['New Game', 'Continue'];
+        this.time = 0;
+        this.stars = [];
+        for (let i = 0; i < 50; i++) {
+            this.stars.push({
+                x: Math.random() * CANVAS_WIDTH,
+                y: Math.random() * CANVAS_HEIGHT * 0.6,
+                size: Math.random() * 2 + 1,
+                speed: Math.random() * 0.5 + 0.2
+            });
+        }
+    }
+
+    update(dt) {
+        this.time += dt;
+        const input = this.game.input;
+
+        if (input.wasPressed('ArrowUp') || input.wasPressed('KeyW')) {
+            this.selectedOption = (this.selectedOption - 1 + this.options.length) % this.options.length;
+        }
+        if (input.wasPressed('ArrowDown') || input.wasPressed('KeyS')) {
+            this.selectedOption = (this.selectedOption + 1) % this.options.length;
+        }
+
+        if (input.wasPressed('Enter') || input.wasPressed('Space')) {
+            if (this.selectedOption === 0) {
+                this.game.startNewGame();
+            } else if (this.selectedOption === 1) {
+                // Try to load save
+                if (this.game.loadGame()) {
+                    // Loaded successfully
+                } else {
+                    this.game.startNewGame();
+                }
+            }
+        }
+    }
+
+    render(ctx) {
+        // Background - night sky gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+        grad.addColorStop(0, '#0a0a2e');
+        grad.addColorStop(0.6, '#1a1a4e');
+        grad.addColorStop(1, '#2a1a1a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // Stars
+        for (const star of this.stars) {
+            const alpha = 0.5 + Math.sin(this.time * star.speed * 3) * 0.5;
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.fillRect(star.x, star.y, star.size, star.size);
+        }
+
+        // Mountain silhouette
+        ctx.fillStyle = '#1a1a3e';
+        ctx.beginPath();
+        ctx.moveTo(0, 380);
+        ctx.lineTo(100, 280);
+        ctx.lineTo(200, 320);
+        ctx.lineTo(350, 240);
+        ctx.lineTo(450, 300);
+        ctx.lineTo(550, 250);
+        ctx.lineTo(650, 290);
+        ctx.lineTo(750, 260);
+        ctx.lineTo(800, 300);
+        ctx.lineTo(800, 380);
+        ctx.closePath();
+        ctx.fill();
+
+        // Hokage monument silhouette
+        ctx.fillStyle = '#252540';
+        ctx.fillRect(250, 270, 300, 110);
+        // Faces (simplified)
+        ctx.fillStyle = '#2a2a48';
+        for (let i = 0; i < 4; i++) {
+            ctx.fillRect(260 + i * 70, 280, 55, 70);
+        }
+
+        // Title
+        const titleY = 100 + Math.sin(this.time * 2) * 5;
+        ctx.save();
+
+        // Title shadow
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 52px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('NARUTO', CANVAS_WIDTH / 2 + 2, titleY + 2);
+
+        // Title text
+        ctx.fillStyle = '#f90';
+        ctx.fillText('NARUTO', CANVAS_WIDTH / 2, titleY);
+
+        // Subtitle
+        ctx.font = 'bold 22px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#e8e8f0';
+        ctx.fillText('TACTICAL RPG', CANVAS_WIDTH / 2, titleY + 40);
+
+        // Leaf village symbol (simplified)
+        ctx.fillStyle = '#f90';
+        ctx.beginPath();
+        ctx.arc(CANVAS_WIDTH / 2, titleY + 70, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0a0a2e';
+        ctx.beginPath();
+        ctx.arc(CANVAS_WIDTH / 2, titleY + 70, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#f90';
+        ctx.beginPath();
+        ctx.moveTo(CANVAS_WIDTH / 2, titleY + 62);
+        ctx.lineTo(CANVAS_WIDTH / 2 + 3, titleY + 70);
+        ctx.lineTo(CANVAS_WIDTH / 2, titleY + 78);
+        ctx.lineTo(CANVAS_WIDTH / 2 - 3, titleY + 70);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+
+        // Menu options
+        const menuY = 400;
+        ctx.textAlign = 'center';
+        for (let i = 0; i < this.options.length; i++) {
+            const isSelected = i === this.selectedOption;
+            const y = menuY + i * 45;
+
+            if (isSelected) {
+                // Selection box
+                ctx.fillStyle = 'rgba(255, 153, 0, 0.2)';
+                ctx.fillRect(CANVAS_WIDTH / 2 - 100, y - 18, 200, 36);
+                ctx.strokeStyle = '#f90';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(CANVAS_WIDTH / 2 - 100, y - 18, 200, 36);
+
+                // Arrow indicator
+                ctx.fillStyle = '#f90';
+                ctx.font = '18px "Segoe UI", sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('\u25B6', CANVAS_WIDTH / 2 - 70, y + 6);
+            }
+
+            ctx.fillStyle = isSelected ? '#fff' : '#888';
+            ctx.font = `${isSelected ? 'bold ' : ''}20px "Segoe UI", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(this.options[i], CANVAS_WIDTH / 2, y + 7);
+        }
+
+        // Controls hint
+        ctx.fillStyle = '#555';
+        ctx.font = '14px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Arrow Keys to navigate \u2022 Enter to select', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30);
+        ctx.fillText('WASD to move \u2022 Space to interact', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 12);
+    }
+}
+
+// ========== js/scenes/overworldScene.js ==========
+
+
+
+class OverworldScene {
+    constructor(game) {
+        this.game = game;
+        this.mapId = 'konoha';
+        this.map = MAPS[this.mapId];
+
+        // Player position in pixels
+        this.playerX = this.map.playerStart.x * TILE_SIZE;
+        this.playerY = this.map.playerStart.y * TILE_SIZE;
+        this.playerDir = 'down';
+        this.playerMoving = false;
+        this.animFrame = 0;
+        this.animTimer = 0;
+
+        // Target tile position for grid-based movement
+        this.targetX = this.playerX;
+        this.targetY = this.playerY;
+        this.isMovingToTarget = false;
+
+        // Camera
+        this.cameraX = 0;
+        this.cameraY = 0;
+
+        // Interaction cooldown
+        this.interactCooldown = 0;
+
+        // Map tile cache
+        this.mapCanvas = null;
+        this.renderMapCache();
+    }
+
+    setMap(mapId, startX, startY) {
+        this.mapId = mapId;
+        this.map = MAPS[mapId];
+        if (startX !== undefined) {
+            this.playerX = startX * TILE_SIZE;
+            this.playerY = startY * TILE_SIZE;
+        } else {
+            this.playerX = this.map.playerStart.x * TILE_SIZE;
+            this.playerY = this.map.playerStart.y * TILE_SIZE;
+        }
+        this.targetX = this.playerX;
+        this.targetY = this.playerY;
+        this.isMovingToTarget = false;
+        this.renderMapCache();
+    }
+
+    renderMapCache() {
+        const map = this.map;
+        this.mapCanvas = document.createElement('canvas');
+        this.mapCanvas.width = map.width * TILE_SIZE;
+        this.mapCanvas.height = map.height * TILE_SIZE;
+        const ctx = this.mapCanvas.getContext('2d');
+
+        for (let y = 0; y < map.height; y++) {
+            for (let x = 0; x < map.width; x++) {
+                const tile = map.tiles[y][x];
+                const px = x * TILE_SIZE;
+                const py = y * TILE_SIZE;
+
+                // Base tile color
+                ctx.fillStyle = TILE_COLORS[tile] || '#333';
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+
+                // Tile details
+                switch (tile) {
+                    case TILE.PATH:
+                        // Path texture
+                        ctx.fillStyle = 'rgba(0,0,0,0.05)';
+                        for (let i = 0; i < 3; i++) {
+                            ctx.fillRect(
+                                px + Math.random() * TILE_SIZE,
+                                py + Math.random() * TILE_SIZE,
+                                2, 2
+                            );
+                        }
+                        break;
+                    case TILE.WATER:
+                        // Water ripples
+                        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                        ctx.fillRect(px + 5, py + 10, 8, 2);
+                        ctx.fillRect(px + 18, py + 20, 8, 2);
+                        break;
+                    case TILE.GRASS:
+                        // Grass texture
+                        ctx.fillStyle = 'rgba(0,0,0,0.05)';
+                        ctx.fillRect(px + 4, py + 8, 1, 3);
+                        ctx.fillRect(px + 14, py + 4, 1, 3);
+                        ctx.fillRect(px + 24, py + 16, 1, 3);
+                        break;
+                    case TILE.BRIDGE:
+                        // Bridge planks
+                        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                        ctx.lineWidth = 1;
+                        for (let i = 0; i < TILE_SIZE; i += 8) {
+                            ctx.beginPath();
+                            ctx.moveTo(px + i, py);
+                            ctx.lineTo(px + i, py + TILE_SIZE);
+                            ctx.stroke();
+                        }
+                        break;
+                }
+
+                // Decorations
+                if (tile === TILE.TREE || tile === TILE.FLOWER || tile === TILE.FENCE) {
+                    drawTileDecoration(ctx, tile, px, py, TILE_SIZE);
+                }
+
+                // Building roofs
+                if (tile === TILE.BUILDING) {
+                    ctx.fillStyle = '#6a4a2a';
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
+                }
+
+                // Door
+                if (tile === TILE.DOOR) {
+                    ctx.fillStyle = TILE_COLORS[TILE.WALL];
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = '#5a3a1a';
+                    ctx.fillRect(px + 8, py + 4, 16, 24);
+                    ctx.fillStyle = '#f0c030';
+                    ctx.fillRect(px + 20, py + 14, 3, 3);
+                }
+            }
+        }
+    }
+
+    update(dt) {
+        const input = this.game.input;
+        this.interactCooldown = Math.max(0, this.interactCooldown - dt);
+
+        // Handle grid-based movement
+        if (this.isMovingToTarget) {
+            const dx = this.targetX - this.playerX;
+            const dy = this.targetY - this.playerY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < MOVE_SPEED) {
+                this.playerX = this.targetX;
+                this.playerY = this.targetY;
+                this.isMovingToTarget = false;
+                this.playerMoving = false;
+
+                // Check for triggers at new position
+                const tileX = Math.round(this.playerX / TILE_SIZE);
+                const tileY = Math.round(this.playerY / TILE_SIZE);
+                this.checkTrigger(tileX, tileY);
+            } else {
+                this.playerX += (dx / dist) * MOVE_SPEED;
+                this.playerY += (dy / dist) * MOVE_SPEED;
+                this.playerMoving = true;
+            }
+        } else {
+            // Accept new movement input
+            const dir = input.getDirection();
+            if (dir.dx !== 0 || dir.dy !== 0) {
+                // Prioritize one direction
+                let moveX = dir.dx;
+                let moveY = dir.dy;
+                if (moveX !== 0 && moveY !== 0) {
+                    moveY = 0; // Prioritize horizontal
+                }
+
+                // Update facing direction
+                if (moveX < 0) this.playerDir = 'left';
+                else if (moveX > 0) this.playerDir = 'right';
+                else if (moveY < 0) this.playerDir = 'up';
+                else if (moveY > 0) this.playerDir = 'down';
+
+                // Check if target tile is walkable
+                const currentTileX = Math.round(this.playerX / TILE_SIZE);
+                const currentTileY = Math.round(this.playerY / TILE_SIZE);
+                const nextX = currentTileX + moveX;
+                const nextY = currentTileY + moveY;
+
+                // Check for NPC blocking
+                const npc = getNPCAt(this.mapId, nextX, nextY);
+
+                if (!isSolid(this.mapId, nextX, nextY) && !npc) {
+                    this.targetX = nextX * TILE_SIZE;
+                    this.targetY = nextY * TILE_SIZE;
+                    this.isMovingToTarget = true;
+                    this.playerMoving = true;
+                }
+            }
+
+            // Interaction (talk to NPCs / examine)
+            if ((input.wasPressed('Space') || input.wasPressed('Enter')) && this.interactCooldown <= 0) {
+                this.interact();
+                this.interactCooldown = 0.3;
+            }
+
+            // Open Skill Tree
+            if (input.wasPressed('KeyT')) {
+                this.game.openSkillTree();
+            }
+        }
+
+        // Animation
+        if (this.playerMoving) {
+            this.animTimer += dt;
+            if (this.animTimer > 0.15) {
+                this.animTimer = 0;
+                this.animFrame = (this.animFrame + 1) % 4;
+            }
+        } else {
+            this.animFrame = 0;
+            this.animTimer = 0;
+        }
+
+        // Update camera
+        this.updateCamera();
+    }
+
+    interact() {
+        const tileX = Math.round(this.playerX / TILE_SIZE);
+        const tileY = Math.round(this.playerY / TILE_SIZE);
+
+        // Direction offsets for facing
+        const offsets = {
+            up: { x: 0, y: -1 },
+            down: { x: 0, y: 1 },
+            left: { x: -1, y: 0 },
+            right: { x: 1, y: 0 }
+        };
+        const off = offsets[this.playerDir];
+        const targetX = tileX + off.x;
+        const targetY = tileY + off.y;
+
+        // Check for NPC
+        const npc = getNPCAt(this.mapId, targetX, targetY);
+        if (npc && npc.dialogue) {
+            this.game.startDialogue(npc.dialogue);
+            return;
+        }
+
+        // Check for door/trigger in front
+        const trigger = getTriggerAt(this.mapId, targetX, targetY);
+        if (trigger) {
+            this.handleTrigger(trigger);
+        }
+    }
+
+    checkTrigger(x, y) {
+        const trigger = getTriggerAt(this.mapId, x, y);
+        if (trigger) {
+            this.handleTrigger(trigger);
+        }
+    }
+
+    handleTrigger(trigger) {
+        if (trigger.type === 'dialogue') {
+            this.game.startDialogue(trigger.dialogueId);
+        } else if (trigger.type === 'story_check') {
+            if (this.game.storyFlags[trigger.storyFlag]) {
+                this.game.startDialogue(trigger.elseDialogueId);
+            } else {
+                this.game.startDialogue(trigger.dialogueId);
+            }
+        } else if (trigger.type === 'battle') {
+            this.game.startBattle(trigger.encounterId);
+        }
+    }
+
+    updateCamera() {
+        // Center camera on player
+        const targetCamX = this.playerX - CANVAS_WIDTH / 2 + TILE_SIZE / 2;
+        const targetCamY = this.playerY - CANVAS_HEIGHT / 2 + TILE_SIZE / 2;
+
+        // Clamp to map bounds
+        const mapW = this.map.width * TILE_SIZE;
+        const mapH = this.map.height * TILE_SIZE;
+        this.cameraX = Math.max(0, Math.min(targetCamX, mapW - CANVAS_WIDTH));
+        this.cameraY = Math.max(0, Math.min(targetCamY, mapH - CANVAS_HEIGHT));
+
+        // Smooth camera
+        // this.cameraX += (targetCamX - this.cameraX) * 0.1;
+        // this.cameraY += (targetCamY - this.cameraY) * 0.1;
+    }
+
+    render(ctx) {
+        ctx.save();
+        ctx.translate(-Math.round(this.cameraX), -Math.round(this.cameraY));
+
+        // Draw cached map
+        if (this.mapCanvas) {
+            ctx.drawImage(this.mapCanvas, 0, 0);
+        }
+
+        // Draw NPCs
+        for (const npc of this.map.npcs) {
+            const sprite = getCharacterSprite(npc.sprite, npc.direction, 0);
+            ctx.drawImage(sprite, npc.x * TILE_SIZE, npc.y * TILE_SIZE);
+
+            // NPC name label
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.font = '10px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            const nameW = ctx.measureText(npc.name).width + 6;
+            ctx.fillRect(
+                npc.x * TILE_SIZE + TILE_SIZE / 2 - nameW / 2,
+                npc.y * TILE_SIZE - 10,
+                nameW, 12
+            );
+            ctx.fillStyle = '#fff';
+            ctx.fillText(npc.name, npc.x * TILE_SIZE + TILE_SIZE / 2, npc.y * TILE_SIZE);
+        }
+
+        // Draw player
+        const sprite = getCharacterSprite('naruto', this.playerDir, this.animFrame);
+        ctx.drawImage(sprite, Math.round(this.playerX), Math.round(this.playerY));
+
+        ctx.restore();
+
+        // Draw HUD
+        this.renderHUD(ctx);
+    }
+
+    renderHUD(ctx) {
+        // Location name
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(10, 10, 200, 26);
+        ctx.fillStyle = '#f90';
+        ctx.font = 'bold 14px "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(this.map.name, 20, 28);
+
+        // Team status (compact)
+        const party = this.game.party;
+        if (party && party.length > 0) {
+            const hudY = CANVAS_HEIGHT - 70;
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(10, hudY, 250, 60);
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(10, hudY, 250, 60);
+
+            for (let i = 0; i < party.length; i++) {
+                const c = party[i];
+                const x = 20;
+                const y = hudY + 8 + i * 18;
+
+                ctx.fillStyle = '#fff';
+                ctx.font = '11px "Segoe UI", sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(c.name.split(' ')[0], x, y + 10);
+
+                // HP bar
+                const barX = x + 55;
+                const hpPct = c.currentHp / c.maxHp;
+                ctx.fillStyle = '#333';
+                ctx.fillRect(barX, y + 2, 60, 6);
+                ctx.fillStyle = hpPct > 0.5 ? '#4c6' : hpPct > 0.25 ? '#ca4' : '#c44';
+                ctx.fillRect(barX, y + 2, 60 * hpPct, 6);
+
+                // Chakra bar
+                const cpPct = c.currentChakra / c.maxChakra;
+                ctx.fillStyle = '#333';
+                ctx.fillRect(barX + 70, y + 2, 60, 6);
+                ctx.fillStyle = '#48f';
+                ctx.fillRect(barX + 70, y + 2, 60 * cpPct, 6);
+
+                // Level + SP indicator
+                ctx.fillStyle = '#888';
+                ctx.font = '10px "Segoe UI", sans-serif';
+                ctx.fillText(`Lv${c.level}`, barX + 140, y + 10);
+                if ((c.skillPoints || 0) > 0) {
+                    ctx.fillStyle = '#f0c030';
+                    ctx.fillText(`${c.skillPoints}SP`, barX + 170, y + 10);
+                }
+            }
+        }
+
+        // Controls hint
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(CANVAS_WIDTH - 160, CANVAS_HEIGHT - 24, 150, 18);
+        ctx.fillStyle = '#777';
+        ctx.font = '10px "Segoe UI", sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('SPACE: Interact  WASD: Move  T: Skills', CANVAS_WIDTH - 15, CANVAS_HEIGHT - 10);
+    }
+}
+
+// ========== js/scenes/battleScene.js ==========
+import {
+    CANVAS_WIDTH, CANVAS_HEIGHT,
+    BATTLE_COLS, BATTLE_ROWS, BATTLE_TILE_SIZE,
+    BATTLE_OFFSET_X, BATTLE_OFFSET_Y
+} from '../constants.js';
+
+
+
+/**
+ * TERRITORY BATTLE SYSTEM
+ *
+ * The battlefield is divided into two territories by a column boundary.
+ * - Left side = Ally territory. Right side = Enemy territory.
+ * - Units CANNOT move into opposing territory.
+ * - PUSH attacks shove enemies further into their side (rightward for enemies).
+ * - Units pushed to the board edge are stopped (no ring outs).
+ * - When no enemies remain in the frontmost enemy column, territory advances.
+ * - PULL attacks drag an enemy INTO your territory.
+ *   When pulled in, ALL adjacent allies get a free Attack of Opportunity.
+ *   Then the victim is flung to the back of the board (rightmost column for enemies).
+ * - Low HP (Into the Breach style) means every action has weight.
+ */
+
+const PHASE = {
+    START: 'start',
+    PLAYER_SELECT: 'player_select',
+    PLAYER_ACTION: 'player_action',
+    PLAYER_TARGET: 'player_target',
+    ANIMATING: 'animating',
+    ENEMY_TURN: 'enemy_turn',
+    VICTORY: 'victory',
+    DEFEAT: 'defeat'
+};
+
+class BattleScene {
+    constructor(game, encounterId) {
+        this.game = game;
+        this.encounterId = encounterId;
+        this.encounter = ENCOUNTERS[encounterId];
+
+        // Battle grid: null = empty, otherwise unit reference
+        this.grid = [];
+        for (let y = 0; y < BATTLE_ROWS; y++) {
+            this.grid[y] = [];
+            for (let x = 0; x < BATTLE_COLS; x++) {
+                this.grid[y][x] = null;
+            }
+        }
+
+        // Territory divider: allies own columns [0, territoryLine-1], enemies own [territoryLine, BATTLE_COLS-1]
+        this.territoryLine = this.encounter.territoryStart || 6;
+
+        // Units
+        this.allies = [];
+        this.enemies = [];
+        this.allUnits = [];
+
+        // Turn management
+        this.turnOrder = [];
+        this.currentTurnIndex = 0;
+        this.roundNumber = 1;
+
+        // Phase
+        this.phase = PHASE.START;
+        this.selectedUnit = null;
+        this.cursorX = 0;
+        this.cursorY = 0;
+        this.moveRange = [];
+        this.attackRange = [];
+        this.selectedAction = null;
+        this.selectedJutsu = null;
+
+        // Animation queue
+        this.animQueue = [];
+        this.animTimer = 0;
+        this.currentAnim = null;
+
+        // UI state
+        this.turnBanner = null;
+        this.turnBannerTimer = 0;
+        this.floatingTexts = [];
+        this.time = 0;
+        this.actionMenuVisible = false;
+        this.jutsuMenuVisible = false;
+        this.actionMenuItems = [];
+        this.selectedMenuIndex = 0;
+        this.messages = [];
+        this.messageTimer = 0;
+        this.territoryFlash = 0; // flash when territory shifts
+
+        // Push/pull animation state
+        this.pushAnims = []; // {unit, fromX, fromY, toX, toY, t}
+
+        this.initBattle();
+    }
+
+    initBattle() {
+        // Place allies in left territory
+        const party = this.game.party;
+        for (let i = 0; i < party.length; i++) {
+            const pos = this.encounter.allyPositions[i];
+            const unit = party[i];
+            unit.gridX = pos.gridX;
+            unit.gridY = pos.gridY;
+            unit.hasMoved = false;
+            unit.hasActed = false;
+            this.grid[pos.gridY][pos.gridX] = unit;
+            this.allies.push(unit);
+        }
+
+        // Create and place enemies in right territory
+        for (const enemyDef of this.encounter.enemies) {
+            const enemy = createCharacter(enemyDef.template, enemyDef.level);
+            enemy.gridX = enemyDef.gridX;
+            enemy.gridY = enemyDef.gridY;
+            this.grid[enemyDef.gridY][enemyDef.gridX] = enemy;
+            this.enemies.push(enemy);
+        }
+
+        this.allUnits = [...this.allies, ...this.enemies];
+        this.calculateTurnOrder();
+
+        this.turnBanner = this.encounter.name;
+        this.turnBannerTimer = 2;
+        this.phase = PHASE.START;
+        this.addMessage(this.encounter.name);
+    }
+
+    calculateTurnOrder() {
+        this.turnOrder = this.allUnits
+            .filter(u => u.currentHp > 0)
+            .sort((a, b) => b.stats.speed - a.stats.speed);
+        this.currentTurnIndex = 0;
+    }
+
+    addMessage(text) {
+        this.messages.unshift(text);
+        if (this.messages.length > 5) this.messages.pop();
+        this.messageTimer = 3;
+    }
+
+    addFloatingText(gridX, gridY, text, color = '#fff', large = false) {
+        this.floatingTexts.push({
+            x: BATTLE_OFFSET_X + gridX * BATTLE_TILE_SIZE + BATTLE_TILE_SIZE / 2,
+            y: BATTLE_OFFSET_Y + gridY * BATTLE_TILE_SIZE,
+            text, color, life: 1.8, vy: -40,
+            size: large ? 24 : 16
+        });
+    }
+
+    getCurrentUnit() {
+        if (this.turnOrder.length === 0) return null;
+        return this.turnOrder[this.currentTurnIndex % this.turnOrder.length];
+    }
+
+    // ===================== TERRITORY LOGIC =====================
+
+    /**
+     * Check if a column is in ally territory.
+     */
+    isAllyTerritory(col) {
+        return col < this.territoryLine;
+    }
+
+    /**
+     * Check if a column is in enemy territory.
+     */
+    isEnemyTerritory(col) {
+        return col >= this.territoryLine;
+    }
+
+    /**
+     * After a push, check if territory should advance.
+     * Territory advances when no enemies exist in the frontmost enemy column.
+     */
+    checkTerritoryAdvance() {
+        let advanced = false;
+        while (this.territoryLine < BATTLE_COLS) {
+            let enemyInFrontCol = false;
+            for (let y = 0; y < BATTLE_ROWS; y++) {
+                const unit = this.grid[y][this.territoryLine];
+                if (unit && !unit.isAlly && unit.currentHp > 0) {
+                    enemyInFrontCol = true;
+                    break;
+                }
+            }
+            if (!enemyInFrontCol) {
+                this.territoryLine++;
+                advanced = true;
+            } else {
+                break;
+            }
+        }
+
+        // Also check if enemies pushed allies back — enemy territory can shrink
+        // (enemies push allies leftward; if no allies in rightmost ally column, territory recedes)
+        while (this.territoryLine > 1) {
+            let allyInBackCol = false;
+            for (let y = 0; y < BATTLE_ROWS; y++) {
+                const unit = this.grid[y][this.territoryLine - 1];
+                if (unit && unit.isAlly && unit.currentHp > 0) {
+                    allyInBackCol = true;
+                    break;
+                }
+            }
+            if (!allyInBackCol) {
+                // Check if any allies are even further back
+                let anyAllyBefore = false;
+                for (let x = 0; x < this.territoryLine - 1; x++) {
+                    for (let y = 0; y < BATTLE_ROWS; y++) {
+                        if (this.grid[y][x]?.isAlly) anyAllyBefore = true;
+                    }
+                }
+                if (anyAllyBefore) break; // Don't shrink if allies are still in territory
+                this.territoryLine--;
+                advanced = true;
+            } else {
+                break;
+            }
+        }
+
+        if (advanced) {
+            this.territoryFlash = 1.0;
+            this.addMessage(`Territory shifted! Line at column ${this.territoryLine}`);
+        }
+    }
+
+    /**
+     * PUSH a unit in a direction. Returns true if unit was pushed off board (KO).
+     * direction: 1 = push right (enemy pushed by ally), -1 = push left (ally pushed by enemy)
+     */
+    pushUnit(unit, pushAmount, direction) {
+        const results = { pushedOff: false, finalX: unit.gridX, tilesMovedThrough: [] };
+
+        for (let i = 0; i < pushAmount; i++) {
+            const newX = unit.gridX + direction;
+
+            // Clamped at board edge — no ring outs
+            if (newX < 0 || newX >= BATTLE_COLS) {
+                this.addFloatingText(unit.gridX, unit.gridY, 'WALL!', '#f90', true);
+                this.addMessage(`${unit.name} is pushed against the edge!`);
+                return results;
+            }
+
+            // Blocked by another unit — stop here and deal 1 collision damage to both
+            if (this.grid[unit.gridY][newX]) {
+                const blocker = this.grid[unit.gridY][newX];
+                blocker.currentHp = Math.max(0, blocker.currentHp - 1);
+                unit.currentHp = Math.max(0, unit.currentHp - 1);
+                this.addFloatingText(newX, unit.gridY, 'COLLISION -1', '#f90');
+                this.addFloatingText(unit.gridX, unit.gridY, '-1', '#f90');
+                this.addMessage(`Collision! ${unit.name} and ${blocker.name} take 1 damage!`);
+
+                if (blocker.currentHp <= 0) {
+                    this.grid[unit.gridY][newX] = null;
+                    this.addMessage(`${blocker.name} is defeated!`);
+                }
+                if (unit.currentHp <= 0) {
+                    this.grid[unit.gridY][unit.gridX] = null;
+                    results.pushedOff = true;
+                    this.addMessage(`${unit.name} is defeated!`);
+                }
+                return results;
+            }
+
+            // Move the unit
+            this.grid[unit.gridY][unit.gridX] = null;
+            unit.gridX = newX;
+            this.grid[unit.gridY][newX] = unit;
+            results.tilesMovedThrough.push(newX);
+        }
+
+        results.finalX = unit.gridX;
+        return results;
+    }
+
+    /**
+     * PULL a unit into the puller's territory.
+     * Triggers Attack of Opportunity from all adjacent allies.
+     * Then unit is flung to the back of their side.
+     */
+    pullUnit(puller, target) {
+        const pullDirection = puller.isAlly ? -1 : 1; // Pull toward puller's side
+        const pullToCol = puller.isAlly
+            ? Math.max(0, puller.gridX - 1) // Pull into ally territory, near puller
+            : Math.min(BATTLE_COLS - 1, puller.gridX + 1);
+
+        // Find empty spot near the pull destination
+        let landingX = pullToCol;
+        let landingY = target.gridY;
+
+        // Find nearest empty cell
+        if (this.grid[landingY][landingX]) {
+            let found = false;
+            for (let r = 1; r < BATTLE_COLS && !found; r++) {
+                for (const dy of [0, -1, 1, -2, 2]) {
+                    for (const dx of [0, -1, 1]) {
+                        const nx = landingX + dx * r;
+                        const ny = landingY + dy;
+                        if (nx >= 0 && nx < BATTLE_COLS && ny >= 0 && ny < BATTLE_ROWS && !this.grid[ny][nx]) {
+                            landingX = nx;
+                            landingY = ny;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) break;
+                }
+            }
+        }
+
+        // Move target to landing position
+        this.grid[target.gridY][target.gridX] = null;
+        target.gridX = landingX;
+        target.gridY = landingY;
+        this.grid[landingY][landingX] = target;
+
+        this.addFloatingText(landingX, landingY, 'PULLED!', '#ff44ff', true);
+        this.addMessage(`${target.name} is pulled into ${puller.isAlly ? 'ally' : 'enemy'} territory!`);
+
+        // ATTACK OF OPPORTUNITY: All adjacent allies/enemies of the puller's side get a free hit
+        const aooUnits = puller.isAlly ? this.allies : this.enemies;
+        let totalAooDmg = 0;
+        for (const attacker of aooUnits) {
+            if (attacker.currentHp <= 0 || attacker === puller) continue;
+            const dist = Math.abs(attacker.gridX - landingX) + Math.abs(attacker.gridY - landingY);
+            if (dist <= attacker.stats.range) {
+                // Free attack!
+                if (rollEvasion(attacker, target)) {
+                    this.addFloatingText(landingX, landingY, 'EVADE!', '#44ffff');
+                    this.addMessage(`${target.name} evades ${attacker.name}'s AoO!`);
+                } else {
+                    const dmg = Math.max(1, attacker.stats.attack - target.stats.defense);
+                    target.currentHp = Math.max(0, target.currentHp - dmg);
+                    totalAooDmg += dmg;
+                    this.addFloatingText(landingX, landingY - 0.3 * aooUnits.indexOf(attacker), `AoO -${dmg}`, '#ff6666');
+                }
+            }
+        }
+
+        if (totalAooDmg > 0) {
+            this.addMessage(`Attacks of Opportunity deal ${totalAooDmg} total damage to ${target.name}!`);
+        }
+
+        // Fling to back of their territory (if still alive)
+        if (target.currentHp > 0) {
+            const backCol = target.isAlly ? 0 : BATTLE_COLS - 1;
+            // Find empty spot at the back
+            this.grid[target.gridY][target.gridX] = null;
+            let placed = false;
+            for (let dy = 0; dy < BATTLE_ROWS && !placed; dy++) {
+                for (const yOff of [0, dy, -dy]) {
+                    const ny = target.gridY + yOff;
+                    if (ny >= 0 && ny < BATTLE_ROWS && !this.grid[ny][backCol]) {
+                        target.gridX = backCol;
+                        target.gridY = ny;
+                        this.grid[ny][backCol] = target;
+                        placed = true;
+                        break;
+                    }
+                }
+            }
+            // If back column is full, find any spot on their back side
+            if (!placed) {
+                for (let x = (target.isAlly ? 0 : BATTLE_COLS - 1);
+                     target.isAlly ? x < this.territoryLine : x >= this.territoryLine;
+                     target.isAlly ? x++ : x--) {
+                    for (let y = 0; y < BATTLE_ROWS; y++) {
+                        if (!this.grid[y][x]) {
+                            target.gridX = x;
+                            target.gridY = y;
+                            this.grid[y][x] = target;
+                            placed = true;
+                            break;
+                        }
+                    }
+                    if (placed) break;
+                }
+            }
+            this.addFloatingText(target.gridX, target.gridY, 'FLUNG BACK!', '#aa44ff');
+            this.addMessage(`${target.name} is flung to the back of the field!`);
+        } else {
+            this.addMessage(`${target.name} is defeated by Attacks of Opportunity!`);
+        }
+
+        this.checkTerritoryAdvance();
+    }
+
+    // ===================== UPDATE LOGIC =====================
+
+    update(dt) {
+        this.time += dt;
+        const input = this.game.input;
+
+        // Update floating texts
+        this.floatingTexts = this.floatingTexts.filter(ft => {
+            ft.y += ft.vy * dt;
+            ft.life -= dt;
+            return ft.life > 0;
+        });
+
+        // Territory flash
+        if (this.territoryFlash > 0) this.territoryFlash -= dt;
+
+        // Banner
+        if (this.turnBannerTimer > 0) {
+            this.turnBannerTimer -= dt;
+            if (this.turnBannerTimer <= 0 && this.phase === PHASE.START) {
+                this.startNextTurn();
+            }
+            return;
+        }
+
+        if (this.messageTimer > 0) this.messageTimer -= dt;
+
+        switch (this.phase) {
+            case PHASE.PLAYER_SELECT:
+                this.updatePlayerSelect(input);
+                break;
+            case PHASE.PLAYER_ACTION:
+                this.updatePlayerAction(input);
+                break;
+            case PHASE.PLAYER_TARGET:
+                this.updatePlayerTarget(input);
+                break;
+            case PHASE.ANIMATING:
+                this.updateAnimation(dt);
+                break;
+            case PHASE.ENEMY_TURN:
+                this.updateEnemyTurn(dt);
+                break;
+            case PHASE.VICTORY:
+            case PHASE.DEFEAT:
+                if (input.wasPressed('Space') || input.wasPressed('Enter')) {
+                    this.endBattle();
+                }
+                break;
+        }
+    }
+
+    startNextTurn() {
+        // Clean dead units
+        this.allUnits = this.allUnits.filter(u => u.currentHp > 0);
+        this.allies = this.allies.filter(u => u.currentHp > 0);
+        this.enemies = this.enemies.filter(u => u.currentHp > 0);
+
+        // Win/lose check
+        if (this.enemies.length === 0) {
+            this.phase = PHASE.VICTORY;
+            this.addMessage('Victory! Territory secured!');
+            return;
+        }
+        if (this.allies.length === 0) {
+            this.phase = PHASE.DEFEAT;
+            this.addMessage('Defeat... territory lost.');
+            return;
+        }
+
+        // Rebuild turn order
+        this.turnOrder = this.allUnits
+            .filter(u => u.currentHp > 0)
+            .sort((a, b) => b.stats.speed - a.stats.speed);
+
+        // Find next unit that hasn't finished their turn
+        let foundUnit = false;
+        for (let i = 0; i < this.turnOrder.length; i++) {
+            const unit = this.turnOrder[i];
+            if (!unit.hasActed) {
+                this.currentTurnIndex = i;
+                foundUnit = true;
+                break;
+            }
+        }
+
+        if (!foundUnit) {
+            // New round
+            this.roundNumber++;
+            for (const unit of this.allUnits) {
+                unit.hasMoved = false;
+                unit.hasActed = false;
+                // Tick buffs
+                unit.buffs = unit.buffs.filter(b => {
+                    b.duration--;
+                    if (b.duration <= 0) {
+                        unit.stats[b.stat] -= b.bonus;
+                        return false;
+                    }
+                    return true;
+                });
+                // Base regen: 1 chakra per round
+                unit.currentChakra = Math.min(unit.maxChakra, unit.currentChakra + 1);
+
+                // Passive effects from skill tree
+                const passives = unit.passives || [];
+                for (const p of passives) {
+                    if (p.passive === 'chakra_regen') {
+                        unit.currentChakra = Math.min(unit.maxChakra, unit.currentChakra + p.value);
+                        this.addFloatingText(unit.gridX, unit.gridY, `+${p.value} CP`, '#4488ff');
+                    }
+                    if (p.passive === 'hp_regen') {
+                        unit.currentHp = Math.min(unit.maxHp, unit.currentHp + p.value);
+                        this.addFloatingText(unit.gridX, unit.gridY, `+${p.value} HP`, '#44ff44');
+                    }
+                }
+            }
+            this.calculateTurnOrder();
+        }
+
+        const unit = this.getCurrentUnit();
+        if (!unit) return;
+
+        this.turnBanner = `${unit.name}'s Turn`;
+        this.turnBannerTimer = 0.8;
+
+        if (unit.isAlly) {
+            this.selectedUnit = unit;
+            this.cursorX = unit.gridX;
+            this.cursorY = unit.gridY;
+            this.calculateMoveRange(unit);
+            this.phase = PHASE.PLAYER_SELECT;
+        } else {
+            this.phase = PHASE.ENEMY_TURN;
+            this.enemyThinkTimer = 0.6;
+        }
+    }
+
+    calculateMoveRange(unit) {
+        this.moveRange = [];
+        const move = unit.stats.move;
+        for (let y = 0; y < BATTLE_ROWS; y++) {
+            for (let x = 0; x < BATTLE_COLS; x++) {
+                const dist = Math.abs(x - unit.gridX) + Math.abs(y - unit.gridY);
+                if (dist <= move && dist > 0 && !this.grid[y][x]) {
+                    // Territory restriction: can only move within your own territory
+                    if (unit.isAlly && this.isAllyTerritory(x)) {
+                        this.moveRange.push({ x, y });
+                    } else if (!unit.isAlly && this.isEnemyTerritory(x)) {
+                        this.moveRange.push({ x, y });
+                    }
+                }
+            }
+        }
+    }
+
+    calculateAttackRange(unit, range) {
+        this.attackRange = [];
+        for (let y = 0; y < BATTLE_ROWS; y++) {
+            for (let x = 0; x < BATTLE_COLS; x++) {
+                const dist = Math.abs(x - unit.gridX) + Math.abs(y - unit.gridY);
+                if (dist <= range && dist > 0) {
+                    this.attackRange.push({ x, y });
+                }
+            }
+        }
+    }
+
+    // ===================== PLAYER INPUT =====================
+
+    updatePlayerSelect(input) {
+        this.moveCursor(input);
+
+        if (input.wasPressed('Space') || input.wasPressed('Enter')) {
+            const unit = this.selectedUnit;
+            // Check if cursor is on a valid move tile
+            const isValidMove = this.moveRange.some(m => m.x === this.cursorX && m.y === this.cursorY);
+            if (isValidMove) {
+                this.grid[unit.gridY][unit.gridX] = null;
+                unit.gridX = this.cursorX;
+                unit.gridY = this.cursorY;
+                this.grid[unit.gridY][unit.gridX] = unit;
+                unit.hasMoved = true;
+                this.moveRange = [];
+            }
+            // Show action menu (can act even if didn't move)
+            this.showActionMenu();
+        }
+
+        if (input.wasPressed('Escape')) {
+            this.selectedUnit.hasMoved = true;
+            this.selectedUnit.hasActed = true;
+            this.moveRange = [];
+            this.startNextTurn();
+        }
+    }
+
+    showActionMenu() {
+        this.phase = PHASE.PLAYER_ACTION;
+        this.actionMenuVisible = true;
+        this.jutsuMenuVisible = false;
+        this.selectedMenuIndex = 0;
+        this.actionMenuItems = ['Attack', 'Jutsu', 'Wait'];
+    }
+
+    updatePlayerAction(input) {
+        if (this.jutsuMenuVisible) {
+            this.updateJutsuMenu(input);
+            return;
+        }
+
+        if (input.wasPressed('ArrowLeft') || input.wasPressed('KeyA') ||
+            input.wasPressed('ArrowUp') || input.wasPressed('KeyW')) {
+            this.selectedMenuIndex = (this.selectedMenuIndex - 1 + this.actionMenuItems.length) % this.actionMenuItems.length;
+        }
+        if (input.wasPressed('ArrowRight') || input.wasPressed('KeyD') ||
+            input.wasPressed('ArrowDown') || input.wasPressed('KeyS')) {
+            this.selectedMenuIndex = (this.selectedMenuIndex + 1) % this.actionMenuItems.length;
+        }
+
+        if (input.wasPressed('Space') || input.wasPressed('Enter')) {
+            const action = this.actionMenuItems[this.selectedMenuIndex];
+            this.handleActionChoice(action);
+        }
+
+        if (input.wasPressed('Escape')) {
+            this.actionMenuVisible = false;
+            this.phase = PHASE.PLAYER_SELECT;
+            this.calculateMoveRange(this.selectedUnit);
+        }
+    }
+
+    handleActionChoice(action) {
+        const unit = this.selectedUnit;
+        switch (action) {
+            case 'Attack':
+                this.selectedAction = 'attack';
+                this.selectedJutsu = null;
+                this.actionMenuVisible = false;
+                this.calculateAttackRange(unit, unit.stats.range);
+                this.phase = PHASE.PLAYER_TARGET;
+                break;
+            case 'Jutsu':
+                this.jutsuMenuVisible = true;
+                this.selectedMenuIndex = 0;
+                break;
+            case 'Wait':
+                unit.hasActed = true;
+                this.actionMenuVisible = false;
+                this.startNextTurn();
+                break;
+        }
+    }
+
+    updateJutsuMenu(input) {
+        const jutsuList = this.selectedUnit.jutsu;
+
+        if (input.wasPressed('ArrowUp') || input.wasPressed('KeyW')) {
+            this.selectedMenuIndex = (this.selectedMenuIndex - 1 + jutsuList.length) % jutsuList.length;
+        }
+        if (input.wasPressed('ArrowDown') || input.wasPressed('KeyS')) {
+            this.selectedMenuIndex = (this.selectedMenuIndex + 1) % jutsuList.length;
+        }
+
+        if (input.wasPressed('Space') || input.wasPressed('Enter')) {
+            const jutsu = jutsuList[this.selectedMenuIndex];
+            if (this.selectedUnit.currentChakra >= jutsu.chakraCost) {
+                this.selectedJutsu = jutsu;
+                this.selectedAction = 'jutsu';
+                this.actionMenuVisible = false;
+                this.jutsuMenuVisible = false;
+
+                if (jutsu.type === 'heal_all') {
+                    // Heal all allies, execute immediately
+                    this.executeJutsu(this.selectedUnit, this.selectedUnit, jutsu);
+                    this.selectedUnit.hasActed = true;
+                    this.attackRange = [];
+                    this.phase = PHASE.ANIMATING;
+                    this.animTimer = 0.8;
+                } else if (jutsu.type === 'buff' && (!jutsu.effect || jutsu.range === 0)) {
+                    // Self-buff, execute immediately
+                    this.executeSelfBuff(this.selectedUnit, jutsu);
+                } else if (jutsu.type === 'buff' || jutsu.type === 'heal') {
+                    // Target ally for buff/heal
+                    this.calculateAllyTargetRange(this.selectedUnit, jutsu.range);
+                    this.phase = PHASE.PLAYER_TARGET;
+                } else {
+                    this.calculateAttackRange(this.selectedUnit, jutsu.range);
+                    this.phase = PHASE.PLAYER_TARGET;
+                }
+            } else {
+                this.addMessage('Not enough chakra!');
+            }
+        }
+
+        if (input.wasPressed('Escape')) {
+            this.jutsuMenuVisible = false;
+            this.selectedMenuIndex = 0;
+        }
+    }
+
+    calculateAllyTargetRange(unit, range) {
+        this.attackRange = [];
+        for (let y = 0; y < BATTLE_ROWS; y++) {
+            for (let x = 0; x < BATTLE_COLS; x++) {
+                const dist = Math.abs(x - unit.gridX) + Math.abs(y - unit.gridY);
+                if (dist <= range) {
+                    this.attackRange.push({ x, y });
+                }
+            }
+        }
+    }
+
+    updatePlayerTarget(input) {
+        this.moveCursor(input);
+
+        if (input.wasPressed('Space') || input.wasPressed('Enter')) {
+            const isInRange = this.attackRange.some(a => a.x === this.cursorX && a.y === this.cursorY);
+            if (isInRange) {
+                const target = this.grid[this.cursorY][this.cursorX];
+                if (target) {
+                    this.executeAction(this.selectedUnit, target);
+                }
+            }
+        }
+
+        if (input.wasPressed('Escape')) {
+            this.attackRange = [];
+            this.showActionMenu();
+        }
+    }
+
+    // ===================== ACTION EXECUTION =====================
+
+    executeSelfBuff(unit, jutsu) {
+        unit.currentChakra -= jutsu.chakraCost;
+        const effect = jutsu.effect;
+        unit.stats[effect.stat] += effect.bonus;
+        unit.buffs.push({ ...effect });
+        this.addFloatingText(unit.gridX, unit.gridY, `+${effect.stat.toUpperCase()}`, '#ffff00', true);
+        this.addMessage(`${unit.name} uses ${jutsu.name}!`);
+        unit.hasActed = true;
+        this.attackRange = [];
+        this.phase = PHASE.ANIMATING;
+        this.animTimer = 0.8;
+    }
+
+    executeAction(attacker, target) {
+        this.attackRange = [];
+        this.moveRange = [];
+        this.phase = PHASE.ANIMATING;
+        this.animTimer = 1.0;
+
+        if (this.selectedAction === 'attack') {
+            // Basic attack: damage + push
+            if (rollEvasion(attacker, target)) {
+                this.addFloatingText(target.gridX, target.gridY, 'EVADE!', '#44ffff', true);
+                this.addMessage(`${target.name} evades ${attacker.name}'s attack!`);
+                this.tryCounterOnEvade(target, attacker);
+            } else {
+                const dmg = calculateDamage(attacker, target, attacker.stats.attack, 'physical');
+                target.currentHp = Math.max(0, target.currentHp - dmg);
+                this.addFloatingText(target.gridX, target.gridY, `-${dmg}`, '#ff4444');
+                this.addMessage(`${attacker.name} attacks ${target.name} for ${dmg}!`);
+
+                // Push
+                if (target.currentHp > 0 && attacker.stats.push > 0) {
+                    const pushDir = attacker.isAlly ? 1 : -1; // Allies push right, enemies push left
+                    this.pushUnit(target, attacker.stats.push, pushDir);
+                }
+
+                if (target.currentHp <= 0) {
+                    this.grid[target.gridY]?.[target.gridX] === target && (this.grid[target.gridY][target.gridX] = null);
+                    this.addMessage(`${target.name} is defeated!`);
+                }
+
+                this.checkTerritoryAdvance();
+            }
+        } else if (this.selectedAction === 'jutsu') {
+            this.executeJutsu(attacker, target, this.selectedJutsu);
+        }
+
+        attacker.hasActed = true;
+        if (!attacker.hasMoved) attacker.hasMoved = true;
+    }
+
+    executeJutsu(attacker, target, jutsu) {
+        attacker.currentChakra -= jutsu.chakraCost;
+
+        switch (jutsu.type) {
+            case 'heal': {
+                const heal = jutsu.power;
+                target.currentHp = Math.min(target.maxHp, target.currentHp + heal);
+                this.addFloatingText(target.gridX, target.gridY, `+${heal} HP`, '#44ff44', true);
+                this.addMessage(`${attacker.name} uses ${jutsu.name}! ${target.name} heals ${heal} HP!`);
+                break;
+            }
+
+            case 'buff': {
+                const effect = jutsu.effect;
+                target.stats[effect.stat] += effect.bonus;
+                target.buffs.push({ ...effect });
+                this.addFloatingText(target.gridX, target.gridY, `+${effect.stat.toUpperCase()}`, '#ffff00', true);
+                this.addMessage(`${attacker.name} uses ${jutsu.name} on ${target.name}!`);
+                break;
+            }
+
+            case 'pull': {
+                this.addMessage(`${attacker.name} uses ${jutsu.name}!`);
+                this.pullUnit(attacker, target);
+                this.animTimer = 1.5; // Longer animation for pull sequence
+                break;
+            }
+
+            case 'push': {
+                // Push-focused jutsu: damage + extra push
+                if (rollEvasion(attacker, target)) {
+                    this.addFloatingText(target.gridX, target.gridY, 'EVADE!', '#44ffff', true);
+                    this.addMessage(`${target.name} evades ${jutsu.name}!`);
+                } else {
+                    const dmg = calculateDamage(attacker, target, jutsu.power, 'physical');
+                    target.currentHp = Math.max(0, target.currentHp - dmg);
+                    this.addFloatingText(target.gridX, target.gridY, `-${dmg}`, '#ff8800', true);
+                    this.addMessage(`${attacker.name} uses ${jutsu.name}! ${dmg} damage!`);
+
+                    if (target.currentHp > 0 && jutsu.push > 0) {
+                        const pushDir = attacker.isAlly ? 1 : -1;
+                        this.pushUnit(target, jutsu.push, pushDir);
+                    }
+
+                    if (target.currentHp <= 0) {
+                        this.grid[target.gridY]?.[target.gridX] === target && (this.grid[target.gridY][target.gridX] = null);
+                        this.addMessage(`${target.name} is defeated!`);
+                    }
+
+                    this.checkTerritoryAdvance();
+                }
+                break;
+            }
+
+            case 'attack': {
+                // Standard damage jutsu (ranged attacks, etc.)
+                if (rollEvasion(attacker, target)) {
+                    this.addFloatingText(target.gridX, target.gridY, 'EVADE!', '#44ffff', true);
+                    this.addMessage(`${target.name} evades ${jutsu.name}!`);
+                } else {
+                    const dmg = calculateDamage(attacker, target, jutsu.power, 'chakra');
+                    target.currentHp = Math.max(0, target.currentHp - dmg);
+                    this.addFloatingText(target.gridX, target.gridY, `-${dmg}`, '#ff8800', true);
+                    this.addMessage(`${attacker.name} uses ${jutsu.name}! ${dmg} damage!`);
+
+                    if (jutsu.push && jutsu.push > 0 && target.currentHp > 0) {
+                        const pushDir = attacker.isAlly ? 1 : -1;
+                        this.pushUnit(target, jutsu.push, pushDir);
+                    }
+
+                    if (target.currentHp <= 0) {
+                        this.grid[target.gridY]?.[target.gridX] === target && (this.grid[target.gridY][target.gridX] = null);
+                        this.addMessage(`${target.name} is defeated!`);
+                    }
+
+                    this.checkTerritoryAdvance();
+                }
+                break;
+            }
+
+            case 'pierce': {
+                // Pierce ignores defense, no evasion
+                const dmg = jutsu.power;
+                target.currentHp = Math.max(0, target.currentHp - dmg);
+                this.addFloatingText(target.gridX, target.gridY, `-${dmg} PIERCE`, '#ffff44', true);
+                this.addMessage(`${attacker.name} uses ${jutsu.name}! ${dmg} piercing damage!`);
+
+                if (jutsu.push && jutsu.push > 0 && target.currentHp > 0) {
+                    const pushDir = attacker.isAlly ? 1 : -1;
+                    this.pushUnit(target, jutsu.push, pushDir);
+                }
+
+                if (target.currentHp <= 0) {
+                    this.grid[target.gridY]?.[target.gridX] === target && (this.grid[target.gridY][target.gridX] = null);
+                    this.addMessage(`${target.name} is defeated!`);
+                }
+
+                this.checkTerritoryAdvance();
+                break;
+            }
+
+            case 'heal_all': {
+                // Heal all living allies
+                const heal = jutsu.power;
+                const allies = this.allUnits.filter(u => u.isAlly === attacker.isAlly && u.currentHp > 0);
+                for (const ally of allies) {
+                    ally.currentHp = Math.min(ally.maxHp, ally.currentHp + heal);
+                    this.addFloatingText(ally.gridX, ally.gridY, `+${heal} HP`, '#44ff44', true);
+                }
+                this.addMessage(`${attacker.name} uses ${jutsu.name}! All allies heal ${heal} HP!`);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Counter-on-evade passive: chance to deal 1 damage back when dodging.
+     */
+    tryCounterOnEvade(evader, attacker) {
+        const passives = evader.passives || [];
+        const counter = passives.find(p => p.passive === 'counter_on_evade');
+        if (!counter) return;
+        if (Math.random() * 100 >= counter.value) return;
+
+        const dmg = 1;
+        attacker.currentHp = Math.max(0, attacker.currentHp - dmg);
+        this.addFloatingText(attacker.gridX, attacker.gridY, `COUNTER -${dmg}`, '#ff44ff', true);
+        this.addMessage(`${evader.name} counters ${attacker.name} for ${dmg}!`);
+        if (attacker.currentHp <= 0) {
+            this.grid[attacker.gridY]?.[attacker.gridX] === attacker && (this.grid[attacker.gridY][attacker.gridX] = null);
+            this.addMessage(`${attacker.name} is defeated!`);
+        }
+    }
+
+    // ===================== ANIMATION =====================
+
+    updateAnimation(dt) {
+        this.animTimer -= dt;
+        if (this.animTimer <= 0) {
+            this.startNextTurn();
+        }
+    }
+
+    // ===================== ENEMY AI =====================
+
+    updateEnemyTurn(dt) {
+        if (this.enemyThinkTimer > 0) {
+            this.enemyThinkTimer -= dt;
+            return;
+        }
+
+        const unit = this.getCurrentUnit();
+        if (!unit || unit.isAlly) {
+            this.startNextTurn();
+            return;
+        }
+
+        this.executeEnemyAI(unit);
+    }
+
+    executeEnemyAI(unit) {
+        // Find closest ally
+        let closestAlly = null;
+        let closestDist = Infinity;
+        for (const ally of this.allies) {
+            if (ally.currentHp <= 0) continue;
+            const dist = Math.abs(ally.gridX - unit.gridX) + Math.abs(ally.gridY - unit.gridY);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestAlly = ally;
+            }
+        }
+
+        if (!closestAlly) {
+            unit.hasActed = true;
+            unit.hasMoved = true;
+            this.startNextTurn();
+            return;
+        }
+
+        // Move toward closest ally (within own territory)
+        if (!unit.hasMoved) {
+            let bestX = unit.gridX, bestY = unit.gridY;
+            let bestDist = closestDist;
+
+            for (let step = 0; step < unit.stats.move; step++) {
+                let improved = false;
+                for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+                    const nx = bestX + dx;
+                    const ny = bestY + dy;
+                    if (nx < 0 || nx >= BATTLE_COLS || ny < 0 || ny >= BATTLE_ROWS) continue;
+                    if (!this.isEnemyTerritory(nx)) continue; // Can't enter ally territory
+                    if (this.grid[ny][nx] && !(ny === unit.gridY && nx === unit.gridX)) continue;
+
+                    const d = Math.abs(closestAlly.gridX - nx) + Math.abs(closestAlly.gridY - ny);
+                    if (d < bestDist) {
+                        bestDist = d;
+                        bestX = nx;
+                        bestY = ny;
+                        improved = true;
+                    }
+                }
+                if (!improved) break;
+            }
+
+            if (bestX !== unit.gridX || bestY !== unit.gridY) {
+                this.grid[unit.gridY][unit.gridX] = null;
+                unit.gridX = bestX;
+                unit.gridY = bestY;
+                this.grid[bestY][bestX] = unit;
+            }
+            unit.hasMoved = true;
+        }
+
+        // Decide action
+        const attackDist = Math.abs(closestAlly.gridX - unit.gridX) + Math.abs(closestAlly.gridY - unit.gridY);
+        let acted = false;
+
+        // Tactical AI: try jutsu first
+        if (unit.ai === 'tactical' && unit.jutsu.length > 0) {
+            // Look for high-value plays
+            for (const jutsu of unit.jutsu) {
+                if (unit.currentChakra < jutsu.chakraCost) continue;
+
+                if (jutsu.type === 'pull' && attackDist <= jutsu.range) {
+                    // Pull is very powerful — use it
+                    this.addMessage(`${unit.name} uses ${jutsu.name}!`);
+                    unit.currentChakra -= jutsu.chakraCost;
+                    this.pullUnit(unit, closestAlly);
+                    acted = true;
+                    break;
+                }
+
+                if (jutsu.type === 'buff' && jutsu.range === 0 && unit.buffs.length === 0) {
+                    // Self-buff if no buffs active
+                    this.executeSelfBuff(unit, jutsu);
+                    // executeSelfBuff sets hasActed, but we handle it below
+                    acted = true;
+                    break;
+                }
+
+                if ((jutsu.type === 'attack' || jutsu.type === 'push' || jutsu.type === 'pierce')
+                    && attackDist <= jutsu.range) {
+                    // Use offensive jutsu
+                    unit.currentChakra -= jutsu.chakraCost;
+                    this.selectedJutsu = jutsu;
+
+                    // Inline jutsu execution for AI
+                    if (jutsu.type === 'pierce') {
+                        const dmg = jutsu.power;
+                        closestAlly.currentHp = Math.max(0, closestAlly.currentHp - dmg);
+                        this.addFloatingText(closestAlly.gridX, closestAlly.gridY, `-${dmg} PIERCE`, '#ffff44', true);
+                        this.addMessage(`${unit.name} uses ${jutsu.name}! ${dmg} piercing damage!`);
+                    } else if (rollEvasion(unit, closestAlly)) {
+                        this.addFloatingText(closestAlly.gridX, closestAlly.gridY, 'EVADE!', '#44ffff', true);
+                        this.addMessage(`${closestAlly.name} evades ${jutsu.name}!`);
+                    } else {
+                        const dmg = calculateDamage(unit, closestAlly, jutsu.power, jutsu.type);
+                        closestAlly.currentHp = Math.max(0, closestAlly.currentHp - dmg);
+                        this.addFloatingText(closestAlly.gridX, closestAlly.gridY, `-${dmg}`, '#ff8800', true);
+                        this.addMessage(`${unit.name} uses ${jutsu.name}! ${dmg} damage!`);
+
+                        if (jutsu.push && jutsu.push > 0 && closestAlly.currentHp > 0) {
+                            this.pushUnit(closestAlly, jutsu.push, -1); // Push ally left
+                        }
+                    }
+
+                    if (closestAlly.currentHp <= 0) {
+                        this.grid[closestAlly.gridY]?.[closestAlly.gridX] === closestAlly &&
+                            (this.grid[closestAlly.gridY][closestAlly.gridX] = null);
+                        this.addMessage(`${closestAlly.name} is defeated!`);
+                    }
+
+                    this.checkTerritoryAdvance();
+                    acted = true;
+                    break;
+                }
+            }
+        }
+
+        // Basic attack if in range and haven't acted
+        if (!acted && attackDist <= unit.stats.range) {
+            if (rollEvasion(unit, closestAlly)) {
+                this.addFloatingText(closestAlly.gridX, closestAlly.gridY, 'EVADE!', '#44ffff', true);
+                this.addMessage(`${closestAlly.name} evades ${unit.name}'s attack!`);
+                this.tryCounterOnEvade(closestAlly, unit);
+            } else {
+                const dmg = calculateDamage(unit, closestAlly, unit.stats.attack, 'physical');
+                closestAlly.currentHp = Math.max(0, closestAlly.currentHp - dmg);
+                this.addFloatingText(closestAlly.gridX, closestAlly.gridY, `-${dmg}`, '#ff4444');
+                this.addMessage(`${unit.name} attacks ${closestAlly.name} for ${dmg}!`);
+
+                // Push ally left (enemy pushes toward ally back)
+                if (closestAlly.currentHp > 0 && unit.stats.push > 0) {
+                    this.pushUnit(closestAlly, unit.stats.push, -1);
+                }
+
+                if (closestAlly.currentHp <= 0) {
+                    this.grid[closestAlly.gridY]?.[closestAlly.gridX] === closestAlly &&
+                        (this.grid[closestAlly.gridY][closestAlly.gridX] = null);
+                    this.addMessage(`${closestAlly.name} is defeated!`);
+                }
+
+                this.checkTerritoryAdvance();
+            }
+        }
+
+        unit.hasActed = true;
+        this.phase = PHASE.ANIMATING;
+        this.animTimer = 1.0;
+    }
+
+    endBattle() {
+        if (this.phase === PHASE.VICTORY) {
+            let totalXP = 0;
+            for (const enemy of this.encounter.enemies) {
+                const template = this.game.getEnemyTemplate(enemy.template);
+                if (template) totalXP += template.xpReward || 15;
+            }
+
+            let anyLevelUp = false;
+            for (const ally of this.game.party) {
+                const msgs = grantXP(ally, totalXP);
+                if (msgs.length > 0) anyLevelUp = true;
+            }
+
+            this.game.returnToOverworld();
+
+            if (this.encounter.victoryDialogue) {
+                this.game.startDialogue(this.encounter.victoryDialogue);
+            }
+
+            // If anyone leveled up, prompt skill tree
+            if (anyLevelUp && this.game.party.some(c => (c.skillPoints || 0) > 0)) {
+                const levelUpDialogue = {
+                    lines: [
+                        { speaker: 'System', text: 'Level up! You earned Skill Points. Press T on the overworld to open the Skill Tree.' }
+                    ]
+                };
+                // Use inline dialogue if no victory dialogue, otherwise it's already handled
+                if (!this.encounter.victoryDialogue) {
+                    this.game.dialogueActive = true;
+                    this.game.currentDialogue = levelUpDialogue;
+                    this.game.dialogueIndex = 0;
+                    this.game.dialogueCharIndex = 0;
+                    this.game.dialogueTimer = 0;
+                    this.game.dialogueBox.classList.remove('hidden');
+                    this.game.showCurrentDialogueLine();
+                }
+            }
+        } else {
+            for (const ally of this.game.party) {
+                ally.currentHp = Math.max(1, Math.floor(ally.maxHp * 0.5));
+                ally.currentChakra = Math.floor(ally.maxChakra * 0.5);
+            }
+            this.game.returnToOverworld();
+        }
+    }
+
+    // ===================== INPUT HELPERS =====================
+
+    moveCursor(input) {
+        if (input.wasPressed('ArrowUp') || input.wasPressed('KeyW')) {
+            this.cursorY = Math.max(0, this.cursorY - 1);
+        }
+        if (input.wasPressed('ArrowDown') || input.wasPressed('KeyS')) {
+            this.cursorY = Math.min(BATTLE_ROWS - 1, this.cursorY + 1);
+        }
+        if (input.wasPressed('ArrowLeft') || input.wasPressed('KeyA')) {
+            this.cursorX = Math.max(0, this.cursorX - 1);
+        }
+        if (input.wasPressed('ArrowRight') || input.wasPressed('KeyD')) {
+            this.cursorX = Math.min(BATTLE_COLS - 1, this.cursorX + 1);
+        }
+
+        if (this.game.input.mouseClicked) {
+            const mx = this.game.input.mouseX - BATTLE_OFFSET_X;
+            const my = this.game.input.mouseY - BATTLE_OFFSET_Y;
+            const gx = Math.floor(mx / BATTLE_TILE_SIZE);
+            const gy = Math.floor(my / BATTLE_TILE_SIZE);
+            if (gx >= 0 && gx < BATTLE_COLS && gy >= 0 && gy < BATTLE_ROWS) {
+                this.cursorX = gx;
+                this.cursorY = gy;
+            }
+        }
+    }
+
+    // ===================== RENDERING =====================
+
+    render(ctx) {
+        this.renderBackground(ctx);
+        this.renderGrid(ctx);
+        this.renderTerritoryLine(ctx);
+        this.renderRanges(ctx);
+        this.renderUnits(ctx);
+        this.renderCursor(ctx);
+        this.renderFloatingTexts(ctx);
+        this.renderBattleHUD(ctx);
+
+        if (this.actionMenuVisible) {
+            this.renderActionMenu(ctx);
+        }
+
+        if (this.turnBannerTimer > 0) {
+            this.renderTurnBanner(ctx);
+        }
+
+        if (this.phase === PHASE.VICTORY || this.phase === PHASE.DEFEAT) {
+            this.renderEndScreen(ctx);
+        }
+    }
+
+    renderBackground(ctx) {
+        const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+        grad.addColorStop(0, '#1a3a1a');
+        grad.addColorStop(1, '#2a4a2a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    }
+
+    renderGrid(ctx) {
+        for (let y = 0; y < BATTLE_ROWS; y++) {
+            for (let x = 0; x < BATTLE_COLS; x++) {
+                const px = BATTLE_OFFSET_X + x * BATTLE_TILE_SIZE;
+                const py = BATTLE_OFFSET_Y + y * BATTLE_TILE_SIZE;
+
+                const isLight = (x + y) % 2 === 0;
+                const isAllyTerr = this.isAllyTerritory(x);
+
+                if (isAllyTerr) {
+                    ctx.fillStyle = isLight ? '#2a5a6a' : '#1e4a5a'; // Blue-tinted for ally
+                } else {
+                    ctx.fillStyle = isLight ? '#6a3a2a' : '#5a2e1e'; // Red-tinted for enemy
+                }
+                ctx.fillRect(px, py, BATTLE_TILE_SIZE, BATTLE_TILE_SIZE);
+
+                ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(px, py, BATTLE_TILE_SIZE, BATTLE_TILE_SIZE);
+            }
+        }
+    }
+
+    renderTerritoryLine(ctx) {
+        const lineX = BATTLE_OFFSET_X + this.territoryLine * BATTLE_TILE_SIZE;
+        const topY = BATTLE_OFFSET_Y;
+        const bottomY = BATTLE_OFFSET_Y + BATTLE_ROWS * BATTLE_TILE_SIZE;
+
+        // Pulsing territory line
+        const pulse = Math.sin(this.time * 3) * 0.3 + 0.7;
+        const flashBoost = Math.max(0, this.territoryFlash);
+
+        ctx.strokeStyle = `rgba(255, 255, 0, ${Math.min(1, pulse + flashBoost)})`;
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 4]);
+        ctx.beginPath();
+        ctx.moveTo(lineX, topY);
+        ctx.lineTo(lineX, bottomY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Territory flash effect
+        if (flashBoost > 0) {
+            ctx.fillStyle = `rgba(255, 255, 0, ${flashBoost * 0.15})`;
+            ctx.fillRect(BATTLE_OFFSET_X, topY,
+                this.territoryLine * BATTLE_TILE_SIZE, BATTLE_ROWS * BATTLE_TILE_SIZE);
+        }
+
+        // Territory labels
+        ctx.font = 'bold 10px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(100, 200, 255, 0.6)';
+        ctx.fillText('ALLY TERRITORY', BATTLE_OFFSET_X + (this.territoryLine * BATTLE_TILE_SIZE) / 2, topY - 5);
+        ctx.fillStyle = 'rgba(255, 100, 100, 0.6)';
+        ctx.fillText('ENEMY TERRITORY',
+            BATTLE_OFFSET_X + this.territoryLine * BATTLE_TILE_SIZE + ((BATTLE_COLS - this.territoryLine) * BATTLE_TILE_SIZE) / 2,
+            topY - 5);
+    }
+
+    renderRanges(ctx) {
+        // Move range (blue)
+        for (const m of this.moveRange) {
+            const px = BATTLE_OFFSET_X + m.x * BATTLE_TILE_SIZE;
+            const py = BATTLE_OFFSET_Y + m.y * BATTLE_TILE_SIZE;
+            ctx.fillStyle = 'rgba(50, 150, 255, 0.35)';
+            ctx.fillRect(px + 2, py + 2, BATTLE_TILE_SIZE - 4, BATTLE_TILE_SIZE - 4);
+            ctx.strokeStyle = 'rgba(50, 150, 255, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(px + 2, py + 2, BATTLE_TILE_SIZE - 4, BATTLE_TILE_SIZE - 4);
+        }
+
+        // Attack/target range
+        for (const a of this.attackRange) {
+            const px = BATTLE_OFFSET_X + a.x * BATTLE_TILE_SIZE;
+            const py = BATTLE_OFFSET_Y + a.y * BATTLE_TILE_SIZE;
+
+            // Different color for heal/buff targeting
+            const isHealTarget = this.selectedJutsu && (this.selectedJutsu.type === 'heal' || this.selectedJutsu.type === 'buff');
+            const isPullTarget = this.selectedJutsu && this.selectedJutsu.type === 'pull';
+
+            if (isHealTarget) {
+                ctx.fillStyle = 'rgba(50, 255, 50, 0.3)';
+                ctx.strokeStyle = 'rgba(50, 255, 50, 0.7)';
+            } else if (isPullTarget) {
+                ctx.fillStyle = 'rgba(200, 50, 255, 0.3)';
+                ctx.strokeStyle = 'rgba(200, 50, 255, 0.7)';
+            } else {
+                ctx.fillStyle = 'rgba(255, 50, 50, 0.3)';
+                ctx.strokeStyle = 'rgba(255, 50, 50, 0.7)';
+            }
+            ctx.fillRect(px + 2, py + 2, BATTLE_TILE_SIZE - 4, BATTLE_TILE_SIZE - 4);
+            ctx.lineWidth = 1;
+            ctx.strokeRect(px + 2, py + 2, BATTLE_TILE_SIZE - 4, BATTLE_TILE_SIZE - 4);
+        }
+    }
+
+    renderUnits(ctx) {
+        for (const unit of this.allUnits) {
+            if (unit.currentHp <= 0) continue;
+
+            const px = BATTLE_OFFSET_X + unit.gridX * BATTLE_TILE_SIZE;
+            const py = BATTLE_OFFSET_Y + unit.gridY * BATTLE_TILE_SIZE;
+            const isSelected = unit === this.selectedUnit && this.phase !== PHASE.ANIMATING;
+
+            // Direction: allies face right, enemies face left
+            const dir = unit.isAlly ? 'right' : 'left';
+            const sprite = getBattleSprite(unit.sprite, dir, Math.floor(this.time * 3) % 4, isSelected);
+            ctx.drawImage(sprite, px + 4, py + 4);
+
+            // HP pips (Into the Breach style — discrete HP blocks)
+            const pipSize = 6;
+            const pipGap = 2;
+            const totalPipWidth = unit.maxHp * (pipSize + pipGap) - pipGap;
+            const pipStartX = px + (BATTLE_TILE_SIZE - totalPipWidth) / 2;
+            const pipY = py - 4;
+
+            for (let i = 0; i < unit.maxHp; i++) {
+                const pipX = pipStartX + i * (pipSize + pipGap);
+                ctx.fillStyle = i < unit.currentHp
+                    ? (unit.isAlly ? '#44cc66' : '#cc4444')
+                    : '#333';
+                ctx.fillRect(pipX, pipY, pipSize, 4);
+                ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                ctx.lineWidth = 0.5;
+                ctx.strokeRect(pipX, pipY, pipSize, 4);
+            }
+
+            // Chakra pips (smaller, blue)
+            if (unit.maxChakra > 0) {
+                const cpSize = 4;
+                const cpGap = 1;
+                const totalCpWidth = unit.maxChakra * (cpSize + cpGap) - cpGap;
+                const cpStartX = px + (BATTLE_TILE_SIZE - totalCpWidth) / 2;
+                const cpY = py - 9;
+
+                for (let i = 0; i < unit.maxChakra; i++) {
+                    const cpX = cpStartX + i * (cpSize + cpGap);
+                    ctx.fillStyle = i < unit.currentChakra ? '#4488ff' : '#222';
+                    ctx.fillRect(cpX, cpY, cpSize, 3);
+                }
+            }
+
+            // Buff indicators
+            if (unit.buffs.length > 0) {
+                const buffPulse = Math.sin(this.time * 4) * 0.5 + 0.5;
+                ctx.fillStyle = `rgba(255, 255, 0, ${0.3 + buffPulse * 0.3})`;
+                ctx.beginPath();
+                ctx.arc(px + BATTLE_TILE_SIZE - 6, py + BATTLE_TILE_SIZE - 6, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Push direction indicator
+            if (isSelected || (this.phase === PHASE.PLAYER_TARGET && this.cursorX === unit.gridX && this.cursorY === unit.gridY)) {
+                if (unit.stats.push > 0) {
+                    ctx.fillStyle = 'rgba(255, 153, 0, 0.7)';
+                    ctx.font = 'bold 10px "Segoe UI", sans-serif';
+                    ctx.textAlign = 'center';
+                    const arrowDir = unit.isAlly ? '\u2192' : '\u2190';
+                    ctx.fillText(`Push ${unit.stats.push}${arrowDir}`, px + BATTLE_TILE_SIZE / 2, py + BATTLE_TILE_SIZE + 10);
+                }
+            }
+        }
+    }
+
+    renderCursor(ctx) {
+        if (this.phase === PHASE.VICTORY || this.phase === PHASE.DEFEAT || this.phase === PHASE.ANIMATING) return;
+
+        const px = BATTLE_OFFSET_X + this.cursorX * BATTLE_TILE_SIZE;
+        const py = BATTLE_OFFSET_Y + this.cursorY * BATTLE_TILE_SIZE;
+        const pulse = Math.sin(this.time * 5) * 0.3 + 0.7;
+
+        ctx.strokeStyle = `rgba(255, 255, 0, ${pulse})`;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px + 1, py + 1, BATTLE_TILE_SIZE - 2, BATTLE_TILE_SIZE - 2);
+
+        // Unit info panel
+        const unitUnder = this.grid[this.cursorY]?.[this.cursorX];
+        if (unitUnder) {
+            this.renderUnitInfo(ctx, unitUnder);
+        }
+
+        // Show territory info
+        ctx.font = '10px "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = this.isAllyTerritory(this.cursorX) ? '#88ccff' : '#ff8888';
+        ctx.fillText(this.isAllyTerritory(this.cursorX) ? 'Ally Territory' : 'Enemy Territory',
+            BATTLE_OFFSET_X, CANVAS_HEIGHT - 5);
+    }
+
+    renderUnitInfo(ctx, unit) {
+        const infoX = CANVAS_WIDTH - 195;
+        const infoY = CANVAS_HEIGHT - 185;
+        const infoW = 185;
+        const infoH = 175;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.9)';
+        ctx.fillRect(infoX, infoY, infoW, infoH);
+        ctx.strokeStyle = unit.isAlly ? '#4a9' : '#e44';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(infoX, infoY, infoW, infoH);
+
+        let y = infoY + 16;
+
+        // Name
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 13px "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(unit.name, infoX + 8, y);
+        ctx.fillStyle = '#888';
+        ctx.font = '11px "Segoe UI", sans-serif';
+        ctx.fillText(`Lv.${unit.level}`, infoX + infoW - 35, y);
+        y += 18;
+
+        // HP pips in info panel
+        ctx.fillStyle = '#888';
+        ctx.fillText('HP', infoX + 8, y);
+        for (let i = 0; i < unit.maxHp; i++) {
+            ctx.fillStyle = i < unit.currentHp ? '#4c6' : '#333';
+            ctx.fillRect(infoX + 30 + i * 12, y - 8, 10, 10);
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(infoX + 30 + i * 12, y - 8, 10, 10);
+        }
+        y += 16;
+
+        // Chakra pips
+        ctx.fillStyle = '#888';
+        ctx.fillText('CP', infoX + 8, y);
+        for (let i = 0; i < unit.maxChakra; i++) {
+            ctx.fillStyle = i < unit.currentChakra ? '#48f' : '#333';
+            ctx.fillRect(infoX + 30 + i * 12, y - 8, 10, 10);
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(infoX + 30 + i * 12, y - 8, 10, 10);
+        }
+        y += 18;
+
+        // Stats in compact grid
+        const stats = [
+            ['ATK', unit.stats.attack, '#f88'],
+            ['DEF', unit.stats.defense, '#88f'],
+            ['SPD', unit.stats.speed, '#8f8'],
+            ['EVA', Math.min(75, unit.stats.evasion + unit.stats.speed * 2) + '%', '#ff8'],
+            ['MOV', unit.stats.move, '#aaa'],
+            ['PUSH', unit.stats.push, '#f90']
+        ];
+
+        for (let i = 0; i < stats.length; i++) {
+            const sx = infoX + 8 + (i % 3) * 58;
+            const sy = y + Math.floor(i / 3) * 16;
+            ctx.fillStyle = '#666';
+            ctx.font = '9px "Segoe UI", sans-serif';
+            ctx.fillText(stats[i][0], sx, sy);
+            ctx.fillStyle = stats[i][2];
+            ctx.font = 'bold 11px "Segoe UI", sans-serif';
+            ctx.fillText(stats[i][1], sx + 28, sy);
+        }
+        y += 38;
+
+        // Buffs
+        if (unit.buffs.length > 0) {
+            ctx.fillStyle = '#ff0';
+            ctx.font = '10px "Segoe UI", sans-serif';
+            const buffText = unit.buffs.map(b => `${b.stat}+${b.bonus}(${b.duration}t)`).join(' ');
+            ctx.fillText(buffText, infoX + 8, y);
+        }
+    }
+
+    renderBattleHUD(ctx) {
+        // Top bar: turn order + round
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.fillRect(0, 0, CANVAS_WIDTH, 28);
+
+        ctx.font = 'bold 11px "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#f90';
+        ctx.fillText(`Round ${this.roundNumber}`, 8, 18);
+
+        ctx.fillStyle = '#888';
+        ctx.fillText('Turn:', 80, 18);
+
+        let tx = 115;
+        for (let i = 0; i < Math.min(10, this.turnOrder.length); i++) {
+            const unit = this.turnOrder[(this.currentTurnIndex + i) % this.turnOrder.length];
+            if (unit.currentHp <= 0) continue;
+            const isCurrent = i === 0;
+            const name = unit.name.split(' ')[0];
+            ctx.fillStyle = isCurrent ? '#ff0' : (unit.isAlly ? '#88ccff' : '#ff8888');
+            ctx.font = `${isCurrent ? 'bold ' : ''}10px "Segoe UI", sans-serif`;
+            ctx.fillText(name, tx, 18);
+            tx += ctx.measureText(name).width + 8;
+        }
+
+        // Territory control bar
+        const barX = BATTLE_OFFSET_X;
+        const barY = 32;
+        const barW = BATTLE_COLS * BATTLE_TILE_SIZE;
+        const barH = 8;
+        const allyPct = this.territoryLine / BATTLE_COLS;
+
+        ctx.fillStyle = '#1e4a5a';
+        ctx.fillRect(barX, barY, barW * allyPct, barH);
+        ctx.fillStyle = '#5a2e1e';
+        ctx.fillRect(barX + barW * allyPct, barY, barW * (1 - allyPct), barH);
+        ctx.strokeStyle = '#ff0';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barW, barH);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = '8px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${Math.round(allyPct * 100)}%`, barX + barW * allyPct / 2, barY + 7);
+        ctx.fillText(`${Math.round((1 - allyPct) * 100)}%`, barX + barW * allyPct + barW * (1 - allyPct) / 2, barY + 7);
+
+        // Messages
+        if (this.messages.length > 0 && this.messageTimer > 0) {
+            ctx.fillStyle = 'rgba(0,0,0,0.8)';
+            ctx.fillRect(0, CANVAS_HEIGHT - 28, CANVAS_WIDTH, 28);
+            ctx.fillStyle = '#fff';
+            ctx.font = '13px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(this.messages[0], CANVAS_WIDTH / 2, CANVAS_HEIGHT - 10);
+        }
+
+        // Phase indicator
+        const phaseLabels = {
+            [PHASE.PLAYER_SELECT]: 'Move (WASD) \u2192 SPACE to confirm',
+            [PHASE.PLAYER_ACTION]: 'Choose Action',
+            [PHASE.PLAYER_TARGET]: 'Choose Target \u2192 SPACE to confirm',
+            [PHASE.ENEMY_TURN]: 'Enemy Turn...',
+        };
+        if (phaseLabels[this.phase]) {
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            const labelW = 220;
+            ctx.fillRect(CANVAS_WIDTH - labelW - 5, CANVAS_HEIGHT - 50, labelW, 18);
+            ctx.fillStyle = '#ccc';
+            ctx.font = '11px "Segoe UI", sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(phaseLabels[this.phase], CANVAS_WIDTH - 10, CANVAS_HEIGHT - 37);
+        }
+    }
+
+    renderActionMenu(ctx) {
+        const menuW = 300;
+        const menuX = CANVAS_WIDTH / 2 - menuW / 2;
+        const menuY = CANVAS_HEIGHT - 80;
+
+        if (this.jutsuMenuVisible) {
+            const jutsuList = this.selectedUnit.jutsu;
+            const jMenuY = menuY - jutsuList.length * 40 - 10;
+
+            ctx.fillStyle = 'rgba(0,0,0,0.95)';
+            ctx.fillRect(menuX, jMenuY, menuW, jutsuList.length * 40 + 10);
+            ctx.strokeStyle = '#f90';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(menuX, jMenuY, menuW, jutsuList.length * 40 + 10);
+
+            for (let i = 0; i < jutsuList.length; i++) {
+                const j = jutsuList[i];
+                const y = jMenuY + 8 + i * 40;
+                const isSelected = i === this.selectedMenuIndex;
+                const canAfford = this.selectedUnit.currentChakra >= j.chakraCost;
+
+                if (isSelected) {
+                    ctx.fillStyle = 'rgba(255, 153, 0, 0.2)';
+                    ctx.fillRect(menuX + 4, y - 2, menuW - 8, 36);
+                }
+
+                // Jutsu name + type badge
+                ctx.fillStyle = canAfford ? (isSelected ? '#fff' : '#ccc') : '#555';
+                ctx.font = 'bold 13px "Segoe UI", sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(j.name, menuX + 12, y + 12);
+
+                // Type badge
+                const typeColors = { push: '#f90', pull: '#c4f', attack: '#f44', pierce: '#ff4', heal: '#4f4', buff: '#ff0' };
+                ctx.fillStyle = typeColors[j.type] || '#888';
+                ctx.font = 'bold 9px "Segoe UI", sans-serif';
+                const badge = j.type.toUpperCase();
+                const badgeW = ctx.measureText(badge).width + 8;
+                ctx.fillRect(menuX + 12, y + 16, badgeW, 14);
+                ctx.fillStyle = '#000';
+                ctx.fillText(badge, menuX + 16, y + 26);
+
+                // Description
+                ctx.font = '10px "Segoe UI", sans-serif';
+                ctx.fillStyle = canAfford ? '#999' : '#444';
+                ctx.fillText(j.description, menuX + 12 + badgeW + 6, y + 26);
+
+                // Cost
+                ctx.fillStyle = canAfford ? '#48f' : '#335';
+                ctx.font = 'bold 12px "Segoe UI", sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(`${j.chakraCost} CP`, menuX + menuW - 12, y + 12);
+            }
+        }
+
+        // Main action buttons
+        const btnW = 90;
+        const btnGap = 10;
+        const totalW = this.actionMenuItems.length * btnW + (this.actionMenuItems.length - 1) * btnGap;
+        const startX = CANVAS_WIDTH / 2 - totalW / 2;
+
+        for (let i = 0; i < this.actionMenuItems.length; i++) {
+            const x = startX + i * (btnW + btnGap);
+            const isSelected = i === this.selectedMenuIndex && !this.jutsuMenuVisible;
+
+            ctx.fillStyle = isSelected ? '#f90' : 'rgba(0,0,0,0.9)';
+            ctx.fillRect(x, menuY, btnW, 36);
+            ctx.strokeStyle = '#f90';
+            ctx.lineWidth = isSelected ? 2 : 1;
+            ctx.strokeRect(x, menuY, btnW, 36);
+
+            ctx.fillStyle = isSelected ? '#000' : '#fff';
+            ctx.font = 'bold 14px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(this.actionMenuItems[i], x + btnW / 2, menuY + 23);
+        }
+    }
+
+    renderFloatingTexts(ctx) {
+        for (const ft of this.floatingTexts) {
+            ctx.globalAlpha = Math.min(1, ft.life);
+            ctx.fillStyle = '#000';
+            ctx.font = `bold ${ft.size}px "Segoe UI", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(ft.text, ft.x + 1, ft.y + 1);
+            ctx.fillStyle = ft.color;
+            ctx.fillText(ft.text, ft.x, ft.y);
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    renderTurnBanner(ctx) {
+        const alpha = Math.min(1, this.turnBannerTimer * 2.5);
+        ctx.fillStyle = `rgba(0,0,0,${alpha * 0.7})`;
+        ctx.fillRect(0, CANVAS_HEIGHT / 2 - 25, CANVAS_WIDTH, 50);
+
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.font = 'bold 24px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(this.turnBanner, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 6);
+    }
+
+    renderEndScreen(ctx) {
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        const isVictory = this.phase === PHASE.VICTORY;
+
+        // Big text
+        ctx.fillStyle = isVictory ? '#f90' : '#c44';
+        ctx.font = 'bold 48px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(isVictory ? 'VICTORY!' : 'DEFEAT', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30);
+
+        if (isVictory) {
+            // Territory control result
+            const pct = Math.round((this.territoryLine / BATTLE_COLS) * 100);
+            ctx.fillStyle = '#fff';
+            ctx.font = '18px "Segoe UI", sans-serif';
+            ctx.fillText(`Territory Secured: ${pct}%`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 10);
+
+            let totalXP = 0;
+            for (const enemy of this.encounter.enemies) {
+                totalXP += 15;
+            }
+            ctx.fillStyle = '#ff0';
+            ctx.fillText(`+${totalXP} XP earned`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 35);
+        }
+
+        ctx.fillStyle = '#888';
+        ctx.font = '14px "Segoe UI", sans-serif';
+        ctx.fillText('Press SPACE to continue', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 70);
+    }
+}
+
+// ========== js/scenes/skillTreeScene.js ==========
+
+
+/**
+ * Skill Tree Scene
+ *
+ * Visual tree layout — navigate nodes, spend SP.
+ * Tab between party members with Q/E.
+ * Arrow keys to move cursor between nodes.
+ * Space/Enter to unlock a node.
+ * Escape to return to overworld.
+ */
+
+// Layout constants
+const NODE_RADIUS = 18;
+const TIER_Y_START = 80;
+const TIER_Y_GAP = 100;
+const TREE_CENTER_X = CANVAS_WIDTH / 2;
+
+// Colors
+const COL = {
+    bg: '#1a1a2e',
+    locked: '#3a3a5a',
+    available: '#4a6a2a',
+    unlocked: '#2a8a4a',
+    exclusive_locked: '#6a2a2a',
+    cursor: '#f0c030',
+    line: '#333',
+    line_unlocked: '#4a8a4a',
+    text: '#e0e0e0',
+    dim: '#666',
+    sp: '#f0c030',
+    tier_label: '#444',
+};
+
+class SkillTreeScene {
+    constructor(game) {
+        this.game = game;
+        this.partyIndex = 0;
+        this.cursorIndex = 0;
+        this.flashTimer = 0;
+        this.unlockMessage = null;
+        this.unlockMessageTimer = 0;
+
+        // Precompute node positions for current character
+        this.nodePositions = [];
+        this.computeLayout();
+    }
+
+    get character() {
+        return this.game.party[this.partyIndex];
+    }
+
+    get tree() {
+        return SKILL_TREES[this.character.templateId] || [];
+    }
+
+    computeLayout() {
+        const tree = this.tree;
+        if (!tree.length) { this.nodePositions = []; return; }
+
+        // Group nodes by tier
+        const tiers = {};
+        for (const node of tree) {
+            if (!tiers[node.tier]) tiers[node.tier] = [];
+            tiers[node.tier].push(node);
+        }
+
+        this.nodePositions = [];
+        for (const node of tree) {
+            const tierNodes = tiers[node.tier];
+            const idx = tierNodes.indexOf(node);
+            const count = tierNodes.length;
+            const spacing = Math.min(160, (CANVAS_WIDTH - 120) / count);
+            const startX = TREE_CENTER_X - ((count - 1) * spacing) / 2;
+            this.nodePositions.push({
+                id: node.id,
+                x: startX + idx * spacing,
+                y: TIER_Y_START + (node.tier - 1) * TIER_Y_GAP,
+            });
+        }
+
+        // Clamp cursor
+        if (this.cursorIndex >= tree.length) this.cursorIndex = 0;
+    }
+
+    update(dt) {
+        const input = this.game.input;
+        this.flashTimer += dt;
+
+        if (this.unlockMessageTimer > 0) {
+            this.unlockMessageTimer -= dt;
+            if (this.unlockMessageTimer <= 0) this.unlockMessage = null;
+        }
+
+        // Tab characters
+        if (input.wasPressed('KeyQ') || input.wasPressed('BracketLeft')) {
+            this.partyIndex = (this.partyIndex - 1 + this.game.party.length) % this.game.party.length;
+            this.cursorIndex = 0;
+            this.computeLayout();
+        }
+        if (input.wasPressed('KeyE') || input.wasPressed('BracketRight')) {
+            this.partyIndex = (this.partyIndex + 1) % this.game.party.length;
+            this.cursorIndex = 0;
+            this.computeLayout();
+        }
+
+        // Navigate nodes
+        if (input.wasPressed('ArrowUp') || input.wasPressed('KeyW')) {
+            this.moveCursor(-1, 'vertical');
+        }
+        if (input.wasPressed('ArrowDown') || input.wasPressed('KeyS')) {
+            this.moveCursor(1, 'vertical');
+        }
+        if (input.wasPressed('ArrowLeft') || input.wasPressed('KeyA')) {
+            this.moveCursor(-1, 'horizontal');
+        }
+        if (input.wasPressed('ArrowRight') || input.wasPressed('KeyD')) {
+            this.moveCursor(1, 'horizontal');
+        }
+
+        // Unlock node
+        if (input.wasPressed('Space') || input.wasPressed('Enter')) {
+            const node = this.tree[this.cursorIndex];
+            if (node) {
+                const result = unlockNode(this.character, node.id);
+                if (result) {
+                    this.unlockMessage = result;
+                    this.unlockMessageTimer = 2.5;
+                }
+            }
+        }
+
+        // Mouse click on nodes
+        if (input.mouseClicked) {
+            const mx = input.mouseX;
+            const my = input.mouseY;
+            for (let i = 0; i < this.nodePositions.length; i++) {
+                const pos = this.nodePositions[i];
+                const dx = mx - pos.x;
+                const dy = my - pos.y;
+                if (dx * dx + dy * dy < NODE_RADIUS * NODE_RADIUS * 1.5) {
+                    this.cursorIndex = i;
+                    // Try unlock on click
+                    const node = this.tree[i];
+                    if (node && canUnlockNode(this.character, node.id)) {
+                        const result = unlockNode(this.character, node.id);
+                        if (result) {
+                            this.unlockMessage = result;
+                            this.unlockMessageTimer = 2.5;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Exit
+        if (input.wasPressed('Escape') || input.wasPressed('Backspace')) {
+            this.game.returnToOverworld();
+        }
+    }
+
+    moveCursor(dir, axis) {
+        const pos = this.nodePositions[this.cursorIndex];
+        if (!pos) return;
+
+        let best = -1;
+        let bestDist = Infinity;
+
+        for (let i = 0; i < this.nodePositions.length; i++) {
+            if (i === this.cursorIndex) continue;
+            const p = this.nodePositions[i];
+            const dx = p.x - pos.x;
+            const dy = p.y - pos.y;
+
+            if (axis === 'vertical') {
+                if (dir > 0 && dy <= 5) continue;
+                if (dir < 0 && dy >= -5) continue;
+                const dist = Math.abs(dy) + Math.abs(dx) * 0.3;
+                if (dist < bestDist) { bestDist = dist; best = i; }
+            } else {
+                if (dir > 0 && dx <= 5) continue;
+                if (dir < 0 && dx >= -5) continue;
+                const dist = Math.abs(dx) + Math.abs(dy) * 0.3;
+                if (dist < bestDist) { bestDist = dist; best = i; }
+            }
+        }
+
+        if (best >= 0) this.cursorIndex = best;
+    }
+
+    render(ctx) {
+        const tree = this.tree;
+        const char = this.character;
+        const unlocked = char.unlockedNodes || [];
+
+        // Background
+        ctx.fillStyle = COL.bg;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // Title bar
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(0, 0, CANVAS_WIDTH, 50);
+        ctx.fillStyle = COL.text;
+        ctx.font = 'bold 20px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${char.name} — Skill Tree`, CANVAS_WIDTH / 2, 32);
+
+        // SP display
+        ctx.fillStyle = COL.sp;
+        ctx.font = 'bold 16px "Segoe UI", sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`SP: ${char.skillPoints || 0}`, CANVAS_WIDTH - 20, 32);
+
+        // Level display
+        ctx.fillStyle = COL.dim;
+        ctx.font = '14px "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Lv ${char.level}   XP: ${char.xp}/${char.xpToNext}`, 20, 32);
+
+        // Character tabs
+        ctx.font = '12px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        for (let i = 0; i < this.game.party.length; i++) {
+            const p = this.game.party[i];
+            const tx = 200 + i * 140;
+            const hasSP = (p.skillPoints || 0) > 0;
+            ctx.fillStyle = i === this.partyIndex ? '#fff' : COL.dim;
+            const label = `[${i === this.partyIndex ? '>' : ' '}] ${p.name.split(' ')[0]}${hasSP ? ' *' : ''}`;
+            ctx.fillText(label, tx, 62);
+        }
+
+        // Tier labels
+        ctx.fillStyle = COL.tier_label;
+        ctx.font = '10px "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        for (let t = 1; t <= 5; t++) {
+            const y = TIER_Y_START + (t - 1) * TIER_Y_GAP;
+            const label = t === 5 ? 'Capstone' : `Tier ${t}`;
+            ctx.fillText(label, 10, y + 4);
+        }
+
+        // Draw connection lines
+        for (let i = 0; i < tree.length; i++) {
+            const node = tree[i];
+            const pos = this.nodePositions[i];
+            for (const reqId of node.requires) {
+                const reqIdx = tree.findIndex(n => n.id === reqId);
+                if (reqIdx < 0) continue;
+                const reqPos = this.nodePositions[reqIdx];
+                const bothUnlocked = unlocked.includes(node.id) && unlocked.includes(reqId);
+                ctx.strokeStyle = bothUnlocked ? COL.line_unlocked : COL.line;
+                ctx.lineWidth = bothUnlocked ? 2 : 1;
+                ctx.beginPath();
+                ctx.moveTo(reqPos.x, reqPos.y + NODE_RADIUS);
+                ctx.lineTo(pos.x, pos.y - NODE_RADIUS);
+                ctx.stroke();
+            }
+        }
+
+        // Draw nodes
+        for (let i = 0; i < tree.length; i++) {
+            const node = tree[i];
+            const pos = this.nodePositions[i];
+            const isUnlocked = unlocked.includes(node.id);
+            const isAvailable = canUnlockNode(char, node.id);
+            const isCursor = i === this.cursorIndex;
+            const isExclusiveLocked = !isUnlocked && node.exclusive &&
+                tree.filter(n => n.exclusive === node.exclusive).some(n => unlocked.includes(n.id));
+
+            // Node circle
+            let fill = COL.locked;
+            if (isUnlocked) fill = COL.unlocked;
+            else if (isExclusiveLocked) fill = COL.exclusive_locked;
+            else if (isAvailable) fill = COL.available;
+
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, NODE_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = fill;
+            ctx.fill();
+
+            // Cursor ring
+            if (isCursor) {
+                const pulse = Math.sin(this.flashTimer * 4) * 0.3 + 0.7;
+                ctx.strokeStyle = COL.cursor;
+                ctx.lineWidth = 3;
+                ctx.globalAlpha = pulse;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, NODE_RADIUS + 4, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+
+            // Unlocked check mark
+            if (isUnlocked) {
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 16px "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('✓', pos.x, pos.y + 6);
+            }
+
+            // Node name
+            ctx.fillStyle = isUnlocked ? '#cfc' : isAvailable ? '#eee' : COL.dim;
+            ctx.font = '11px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(node.name, pos.x, pos.y + NODE_RADIUS + 14);
+        }
+
+        // Selected node details panel
+        const selectedNode = tree[this.cursorIndex];
+        if (selectedNode) {
+            this.renderNodeDetails(ctx, selectedNode, unlocked);
+        }
+
+        // Unlock feedback message
+        if (this.unlockMessage) {
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(CANVAS_WIDTH / 2 - 200, CANVAS_HEIGHT - 100, 400, 30);
+            ctx.fillStyle = '#4f4';
+            ctx.font = 'bold 14px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Unlocked! ${this.unlockMessage}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 80);
+        }
+
+        // Controls hint
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(0, CANVAS_HEIGHT - 28, CANVAS_WIDTH, 28);
+        ctx.fillStyle = COL.dim;
+        ctx.font = '11px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('WASD/Arrows: Navigate    SPACE: Unlock    Q/E: Switch Character    ESC: Back', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 10);
+    }
+
+    renderNodeDetails(ctx, node, unlocked) {
+        const panelX = 20;
+        const panelY = CANVAS_HEIGHT - 160;
+        const panelW = CANVAS_WIDTH - 40;
+        const panelH = 55;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(panelX, panelY, panelW, panelH);
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+        const isUnlocked = unlocked.includes(node.id);
+        const isAvailable = canUnlockNode(this.character, node.id);
+
+        // Node name and status
+        ctx.fillStyle = isUnlocked ? '#4f4' : isAvailable ? COL.sp : COL.text;
+        ctx.font = 'bold 14px "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        const status = isUnlocked ? ' [UNLOCKED]' : isAvailable ? ' [AVAILABLE — Press SPACE]' : '';
+        ctx.fillText(node.name + status, panelX + 10, panelY + 20);
+
+        // Description
+        ctx.fillStyle = '#bbb';
+        ctx.font = '12px "Segoe UI", sans-serif';
+        ctx.fillText(node.description, panelX + 10, panelY + 40);
+
+        // Prerequisites
+        if (node.requires.length > 0 && !isUnlocked) {
+            const tree = this.tree;
+            const reqNames = node.requires.map(r => {
+                const reqNode = tree.find(n => n.id === r);
+                const met = unlocked.includes(r);
+                return (met ? '✓' : '✗') + ' ' + (reqNode ? reqNode.name : r);
+            }).join('   ');
+            ctx.fillStyle = '#888';
+            ctx.textAlign = 'right';
+            ctx.fillText('Requires: ' + reqNames, panelX + panelW - 10, panelY + 20);
+        }
+
+        // Exclusive warning
+        if (node.exclusive && !isUnlocked) {
+            const tree = this.tree;
+            const groupNodes = tree.filter(n => n.exclusive === node.exclusive && n.id !== node.id);
+            const otherPicked = groupNodes.some(n => unlocked.includes(n.id));
+            if (otherPicked) {
+                ctx.fillStyle = '#c44';
+                ctx.textAlign = 'right';
+                ctx.fillText('LOCKED — Other capstone chosen', panelX + panelW - 10, panelY + 40);
+            } else if (groupNodes.length > 0) {
+                ctx.fillStyle = '#ca4';
+                ctx.textAlign = 'right';
+                ctx.fillText('Exclusive — choose only one capstone', panelX + panelW - 10, panelY + 40);
+            }
+        }
+    }
+}
+
+// ========== js/main.js ==========
+
+
+
+
+
+
+
+
+
+class Game {
+    constructor() {
+        this.canvas = document.getElementById('game-canvas');
+        this.canvas.width = CANVAS_WIDTH;
+        this.canvas.height = CANVAS_HEIGHT;
+        this.ctx = this.canvas.getContext('2d');
+        this.ctx.imageSmoothingEnabled = false;
+
+        this.input = new Input();
+
+        // Game state
+        this.currentScene = null;
+        this.scene = SCENE.TITLE;
+        this.party = [];
+        this.storyFlags = {};
+        this.overworldScene = null;
+
+        // Dialogue state
+        this.dialogueActive = false;
+        this.currentDialogue = null;
+        this.dialogueIndex = 0;
+        this.dialogueCharIndex = 0;
+        this.dialogueTimer = 0;
+        this.dialogueSpeed = 0.03; // seconds per character
+        this.dialogueCallback = null;
+
+        // UI elements
+        this.dialogueBox = document.getElementById('dialogue-box');
+        this.dialogueSpeaker = document.getElementById('dialogue-speaker');
+        this.dialogueText = document.getElementById('dialogue-text');
+        this.uiOverlay = document.getElementById('ui-overlay');
+
+        // Start with title screen
+        this.currentScene = new TitleScene(this);
+        this.uiOverlay.classList.remove('hidden');
+
+        // Game loop
+        this.lastTime = performance.now();
+        this.gameLoop = this.gameLoop.bind(this);
+        requestAnimationFrame(this.gameLoop);
+    }
+
+    gameLoop(timestamp) {
+        const dt = Math.min((timestamp - this.lastTime) / 1000, 0.05); // Cap delta time
+        this.lastTime = timestamp;
+
+        // Update
+        if (this.dialogueActive) {
+            this.updateDialogue(dt);
+        } else if (this.currentScene) {
+            this.currentScene.update(dt);
+        }
+
+        // Render
+        this.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        if (this.currentScene) {
+            this.currentScene.render(this.ctx);
+        }
+
+        // End frame
+        this.input.endFrame();
+
+        requestAnimationFrame(this.gameLoop);
+    }
+
+    startNewGame() {
+        // Create party
+        this.party = [
+            createCharacter('naruto', 1),
+            createCharacter('sasuke', 1),
+            createCharacter('sakura', 1)
+        ];
+        this.storyFlags = {};
+
+        // Switch to overworld
+        this.overworldScene = new OverworldScene(this);
+        this.currentScene = this.overworldScene;
+        this.scene = SCENE.OVERWORLD;
+    }
+
+    saveGame() {
+        const saveData = {
+            party: this.party,
+            storyFlags: this.storyFlags,
+            mapId: this.overworldScene?.mapId,
+            playerX: this.overworldScene?.playerX,
+            playerY: this.overworldScene?.playerY
+        };
+        try {
+            localStorage.setItem('naruto_rpg_save', JSON.stringify(saveData));
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    loadGame() {
+        try {
+            const data = JSON.parse(localStorage.getItem('naruto_rpg_save'));
+            if (!data || !data.party) return false;
+
+            this.party = data.party;
+            this.storyFlags = data.storyFlags || {};
+            this.overworldScene = new OverworldScene(this);
+            if (data.mapId) {
+                this.overworldScene.setMap(data.mapId,
+                    Math.round(data.playerX / 32),
+                    Math.round(data.playerY / 32));
+            }
+            this.currentScene = this.overworldScene;
+            this.scene = SCENE.OVERWORLD;
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    startDialogue(dialogueId) {
+        const dialogue = DIALOGUES[dialogueId];
+        if (!dialogue) return;
+
+        this.dialogueActive = true;
+        this.currentDialogue = dialogue;
+        this.dialogueIndex = 0;
+        this.dialogueCharIndex = 0;
+        this.dialogueTimer = 0;
+
+        this.dialogueBox.classList.remove('hidden');
+        this.showCurrentDialogueLine();
+    }
+
+    showCurrentDialogueLine() {
+        const line = this.currentDialogue.lines[this.dialogueIndex];
+        if (!line) return;
+
+        this.dialogueSpeaker.textContent = line.speaker || '';
+        this.dialogueText.textContent = '';
+        this.dialogueCharIndex = 0;
+        this.dialogueTimer = 0;
+    }
+
+    updateDialogue(dt) {
+        const line = this.currentDialogue.lines[this.dialogueIndex];
+        if (!line) return;
+
+        // Typewriter effect
+        if (this.dialogueCharIndex < line.text.length) {
+            this.dialogueTimer += dt;
+            while (this.dialogueTimer >= this.dialogueSpeed && this.dialogueCharIndex < line.text.length) {
+                this.dialogueTimer -= this.dialogueSpeed;
+                this.dialogueCharIndex++;
+                this.dialogueText.textContent = line.text.substring(0, this.dialogueCharIndex);
+            }
+
+            // Skip ahead on input
+            if (this.input.wasPressed('Space') || this.input.wasPressed('Enter')) {
+                this.dialogueCharIndex = line.text.length;
+                this.dialogueText.textContent = line.text;
+            }
+        } else {
+            // Wait for input to advance
+            if (this.input.wasPressed('Space') || this.input.wasPressed('Enter')) {
+                this.dialogueIndex++;
+                if (this.dialogueIndex >= this.currentDialogue.lines.length) {
+                    this.endDialogue();
+                } else {
+                    this.showCurrentDialogueLine();
+                }
+            }
+        }
+    }
+
+    endDialogue() {
+        this.dialogueActive = false;
+        this.dialogueBox.classList.add('hidden');
+
+        // Handle dialogue completion actions
+        const action = this.currentDialogue.onComplete;
+        if (action) {
+            switch (action.action) {
+                case 'setFlag':
+                    this.storyFlags[action.flag] = true;
+                    this.saveGame();
+                    // Check for progression triggers
+                    this.checkStoryProgression();
+                    break;
+                case 'heal':
+                    for (const member of this.party) {
+                        member.currentHp = member.maxHp;
+                        member.currentChakra = member.maxChakra;
+                    }
+                    break;
+                case 'startBattle':
+                    this.startBattle(action.encounter);
+                    break;
+            }
+        }
+
+        this.currentDialogue = null;
+    }
+
+    checkStoryProgression() {
+        // After completing first battle, set up second battle trigger
+        if (this.storyFlags.completed_first_battle && !this.storyFlags.second_battle_available) {
+            this.storyFlags.second_battle_available = true;
+            // Update gate guard dialogue and trigger
+            const map = this.overworldScene.map;
+            const gateTrigger = map.triggers.find(t => t.x === 0 && t.y === 9);
+            if (gateTrigger) {
+                gateTrigger.storyFlag = 'completed_first_battle';
+                gateTrigger.elseDialogueId = 'gate_battle_2';
+            }
+
+            // Add second battle dialogue
+            DIALOGUES.gate_battle_2 = {
+                lines: [
+                    { speaker: 'Gate Guard', text: "Team 7! More rogue ninja have appeared - and they've brought a Jonin!" },
+                    { speaker: 'Naruto', text: "A Jonin?! This is gonna be tough..." },
+                    { speaker: 'Sasuke', text: "Good. I need a real challenge." },
+                    { speaker: 'Sakura', text: "Stay together and we'll be fine!" }
+                ],
+                onComplete: {
+                    action: 'startBattle',
+                    encounter: 'second_battle'
+                }
+            };
+        }
+
+        if (this.storyFlags.completed_second_battle && !this.storyFlags.game_completed) {
+            this.storyFlags.game_completed = true;
+            setTimeout(() => this.startDialogue('game_complete'), 500);
+        }
+    }
+
+    startBattle(encounterId) {
+        this.scene = SCENE.BATTLE;
+        this.currentScene = new BattleScene(this, encounterId);
+    }
+
+    openSkillTree() {
+        this.scene = SCENE.SKILL_TREE;
+        this.currentScene = new SkillTreeScene(this);
+    }
+
+    returnToOverworld() {
+        this.scene = SCENE.OVERWORLD;
+        this.currentScene = this.overworldScene;
+        this.saveGame();
+    }
+
+    getEnemyTemplate(templateId) {
+        return ENEMY_TEMPLATES[templateId] || null;
+    }
+}
+
+// Start the game when the page loads
+window.addEventListener('load', () => {
+    new Game();
+});
+
+    </script>
+</body>
+</html>
